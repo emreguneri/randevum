@@ -3,9 +3,9 @@
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 
-export default function LoginPage() {
+function LoginForm() {
   const { login, user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -20,6 +20,7 @@ export default function LoginPage() {
     const redirectTarget = searchParams.get("redirect");
     router.replace(redirectTarget || "/");
   }, [loading, user, router, searchParams]);
+  
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -40,7 +41,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-16 text-slate-50">
       <div className="w-full max-w-md space-y-8 rounded-3xl border border-white/10 bg-white/[0.06] p-10 shadow-2xl shadow-black/40 backdrop-blur">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-semibold">Randevum’a Giriş Yap</h1>
+          <h1 className="text-3xl font-semibold">Randevum'a Giriş Yap</h1>
           <p className="text-sm text-slate-200/70">
             E-posta adresiniz ve şifrenizle giriş yapın. Henüz hesabınız yoksa kayıt olun.
           </p>
@@ -100,5 +101,19 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-50">
+        <div className="text-center">
+          <p className="text-lg">Yükleniyor...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
