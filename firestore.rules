@@ -1,0 +1,163 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function: Kullanıcı giriş yapmış mı?
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function: Kullanıcı kendi verisi mi?
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Helper function: Kullanıcı admin (işletme sahibi) mi?
+    // Not: get() kullanımı ekstra okuma maliyeti yaratır, sadece gerektiğinde kullanın
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // ============================================
+    // USERS Collection
+    // ============================================
+    match /users/{userId} {
+      // Kullanıcılar sadece kendi verilerini okuyabilir
+      allow read: if isOwner(userId);
+      
+      // Kullanıcılar sadece kendi verilerini oluşturabilir (kayıt sırasında)
+      allow create: if isOwner(userId) && 
+                       request.resource.data.uid == userId &&
+                       request.resource.data.email == request.auth.token.email;
+      
+      // Kullanıcılar sadece kendi verilerini güncelleyebilir
+      // Ancak role ve subscriptionStatus gibi kritik alanlar sadece backend tarafından güncellenebilir
+      allow update: if isOwner(userId) && 
+                       (!request.resource.diff(resource).affectedKeys().hasAny(['role', 'subscriptionStatus', 'subscriptionEndsAt', 'iyzico']));
+      
+      // Silme işlemi şimdilik yasak (veri kaybını önlemek için)
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // SHOPS Collection
+    // ============================================
+    match /shops/{shopId} {
+      // Herkes işletmeleri okuyabilir (public booking form için gerekli)
+      allow read: if true;
+      
+      // Sadece authenticated kullanıcılar işletme oluşturabilir
+      // İşletme sahibi kendi ownerId'sini set etmeli
+      allow create: if isAuthenticated() && 
+                       request.resource.data.ownerId == request.auth.uid;
+      
+      // Sadece işletme sahibi (ownerId) kendi işletmesini güncelleyebilir
+      allow update: if isAuthenticated() && 
+                       (resource.data.ownerId == request.auth.uid || 
+                        request.resource.data.ownerId == request.auth.uid);
+      
+      // Sadece işletme sahibi kendi işletmesini silebilir
+      allow delete: if isAuthenticated() && 
+                       resource.data.ownerId == request.auth.uid;
+    }
+    
+    // ============================================
+    // BOOKINGS Collection
+    // ============================================
+    match /bookings/{bookingId} {
+      // Herkes yeni randevu oluşturabilir (public booking form için)
+      // Ancak customerId varsa, sadece kendi UID'sini kullanabilir
+      // Not: Public booking form için authenticated olmayan kullanıcılar da randevu oluşturabilir
+      allow create: if request.resource.data.customerId == null || 
+                       (isAuthenticated() && request.resource.data.customerId == request.auth.uid);
+      
+      // Randevu okuma kuralları:
+      // 1. Randevu sahibi (customerId veya customerEmail ile eşleşen) okuyabilir
+      // 2. İşletme sahibi (ownerId ile eşleşen) okuyabilir
+      // 3. Admin (işletme sahibi) kullanıcılar tüm randevuları okuyabilir (dashboard için)
+      // 4. Eğer customerId null ise (guest booking), sadece ownerId okuyabilir
+      allow read: if !isAuthenticated() || (
+        // Randevu sahibi
+        (resource.data.customerId != null && resource.data.customerId == request.auth.uid) ||
+        // İşletme sahibi
+        (resource.data.ownerId != null && resource.data.ownerId == request.auth.uid) ||
+        // Guest booking için email kontrolü (opsiyonel, güvenlik için)
+        (resource.data.customerEmail != null && 
+         resource.data.customerEmail == request.auth.token.email) ||
+        // Admin kullanıcılar (işletme sahipleri) tüm randevuları görebilir
+        // Not: Bu, dashboard'da tüm randevuları listelemek için gerekli
+        (isAuthenticated() && 
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+      
+      // Randevu güncelleme kuralları:
+      // Sadece işletme sahibi randevuları güncelleyebilir (durum, tarih, saat, hizmet)
+      // Müşteriler randevu değiştiremez, sadece iptal edebilir
+      allow update: if isAuthenticated() && (
+        // İşletme sahibi randevuları güncelleyebilir (durum, tarih, saat, hizmet)
+        (resource.data.ownerId == request.auth.uid) ||
+        // Müşteriler sadece kendi randevularını iptal edebilir
+        (resource.data.customerId == request.auth.uid && 
+         request.resource.data.status == 'cancelled' &&
+         request.resource.diff(resource).affectedKeys().hasOnly(['status', 'updatedAt']))
+      );
+      
+      // Randevu silme şimdilik yasak (veri kaybını önlemek için)
+      allow delete: if false;
+    }
+    
+    // ============================================
+    // FAVORITES Collection (Opsiyonel)
+    // ============================================
+    match /favorites/{favoriteId} {
+      // Kullanıcılar sadece kendi favorilerini okuyabilir
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Kullanıcılar sadece kendi favorilerini oluşturabilir
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Kullanıcılar sadece kendi favorilerini silebilir
+      allow delete: if isAuthenticated() && 
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // ============================================
+    // REVIEWS Collection
+    // ============================================
+    match /reviews/{reviewId} {
+      // Herkes yorumları okuyabilir (public booking form için)
+      allow read: if true;
+      
+      // Sadece authenticated kullanıcılar yorum yazabilir
+      // Kullanıcı kendi customerId'sini set etmeli
+      allow create: if isAuthenticated() && 
+                       request.resource.data.customerId == request.auth.uid &&
+                       request.resource.data.shopId != null;
+      
+      // Kullanıcı sadece kendi yorumunu güncelleyebilir
+      allow update: if isAuthenticated() && 
+                       resource.data.customerId == request.auth.uid &&
+                       request.resource.diff(resource).affectedKeys().hasOnly(['rating', 'comment', 'updatedAt']);
+      
+      // Kullanıcı sadece kendi yorumunu silebilir
+      // İşletme sahibi de kendi işletmesine yapılan yorumları silebilir
+      allow delete: if isAuthenticated() && (
+        resource.data.customerId == request.auth.uid ||
+        (resource.data.ownerId != null && resource.data.ownerId == request.auth.uid)
+      );
+    }
+    
+    // ============================================
+    // Diğer koleksiyonlar için varsayılan kural: Reddet
+    // ============================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

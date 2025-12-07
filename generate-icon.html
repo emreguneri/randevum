@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Randevum Icon Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background: white;
+            display: block;
+            margin: 20px auto;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+        button:hover {
+            background: #dc2626;
+        }
+        .preview {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .preview-item {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+        }
+        .preview-item h3 {
+            margin: 10px 0 5px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center;">Randevum App Icon Generator</h1>
+        <div class="controls">
+            <button onclick="generateIcon()">Icon Oluştur</button>
+            <button onclick="downloadIcon()">Icon İndir (1024x1024)</button>
+        </div>
+        <div class="preview">
+            <div class="preview-item">
+                <h3>1024x1024 (App Store)</h3>
+                <canvas id="icon1024" width="1024" height="1024"></canvas>
+            </div>
+            <div class="preview-item">
+                <h3>512x512 (Preview)</h3>
+                <canvas id="icon512" width="512" height="512"></canvas>
+            </div>
+            <div class="preview-item">
+                <h3>256x256 (Preview)</h3>
+                <canvas id="icon256" width="256" height="256"></canvas>
+            </div>
+            <div class="preview-item">
+                <h3>128x128 (Preview)</h3>
+                <canvas id="icon128" width="128" height="128"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const width = size;
+            const height = size;
+            
+            // Gradient arka plan (web sitesindeki gibi)
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, '#2d0a0a');
+            gradient.addColorStop(0.5, '#1a0a0a');
+            gradient.addColorStop(1, '#0a0505');
+            
+            // Arka plan
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+            
+            // Yuvarlatılmış köşeler için path
+            const radius = size * 0.22; // %22 radius (App Store için uygun)
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(width - radius, 0);
+            ctx.quadraticCurveTo(width, 0, width, radius);
+            ctx.lineTo(width, height - radius);
+            ctx.quadraticCurveTo(width, height, width - radius, height);
+            ctx.lineTo(radius, height);
+            ctx.quadraticCurveTo(0, height, 0, height - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.clip();
+            
+            // Gradient arka plan tekrar çiz (clip sonrası)
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+            
+            // "Rv" metni
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${size * 0.4}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Rv', width / 2, height / 2);
+        }
+
+        function generateIcon() {
+            const sizes = [
+                { id: 'icon1024', size: 1024 },
+                { id: 'icon512', size: 512 },
+                { id: 'icon256', size: 256 },
+                { id: 'icon128', size: 128 }
+            ];
+            
+            sizes.forEach(({ id, size }) => {
+                const canvas = document.getElementById(id);
+                drawIcon(canvas, size);
+            });
+        }
+
+        function downloadIcon() {
+            const canvas = document.getElementById('icon1024');
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'icon.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+
+        // Sayfa yüklendiğinde otomatik oluştur
+        window.onload = function() {
+            generateIcon();
+        };
+    </script>
+</body>
+</html>
+
