@@ -1279,7 +1279,11 @@ export default function Home() {
                     rel="noopener noreferrer"
                     className="flex items-center justify-center bg-white rounded px-3 py-2 h-10 hover:opacity-80 transition-opacity"
                   >
-                    <span className="text-[#c49a6c] font-bold text-sm">iyzico ile Öde</span>
+                    <img 
+                      src="/iyzico-logo.png" 
+                      alt="iyzico ile Öde" 
+                      className="h-6 object-contain"
+                    />
                   </a>
                 </div>
               </div>
