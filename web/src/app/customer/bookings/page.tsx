@@ -35,9 +35,15 @@ export default function CustomerBookingsPage() {
     if (!loading) {
       if (!user) {
         router.replace("/auth/login");
-      } else if (user.role !== "customer") {
-        router.replace(user.role === "admin" ? "/dashboard/bookings" : "/");
+        return;
       }
+      // Eğer role admin ise dashboard'a yönlendir
+      if (user.role === "admin") {
+        router.replace("/dashboard/bookings");
+        return;
+      }
+      // Role null ise (henüz yüklenmemiş) veya customer ise sayfayı göster
+      // Bu sayfa hem customer hem de role bilgisi yüklenmemiş kullanıcılar için
     }
   }, [loading, user, router]);
 
