@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -48,51 +48,58 @@ export default function CustomerBookingsPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    const loadBookings = async () => {
-      if (!user?.uid) return;
-      try {
-        setIsLoading(true);
-        // Önce orderBy olmadan sorgu yap (index gerekebilir)
-        const q = query(
-          collection(db, "bookings"),
-          where("customerId", "==", user.uid)
-        );
-        const snapshot = await getDocs(q);
-        console.log('[Customer Bookings] Query result:', {
-          userUid: user.uid,
-          totalDocs: snapshot.docs.length,
-          docs: snapshot.docs.map(d => ({ id: d.id, data: d.data() }))
-        });
-        const items: Booking[] = snapshot.docs.map((docSnap) => {
-          const data = docSnap.data();
-          return {
-            id: docSnap.id,
-            service: data.service || "-",
-            branch: data.branch || "-",
-            preferredDate: data.preferredDate || "-",
-            preferredTime: data.preferredTime || "-",
-            status: (data.status as Booking["status"]) || "pending",
-            notes: data.notes,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : undefined,
-            shopName: data.shopName,
-            shopSlug: data.shopSlug,
-          };
-        });
-        // Manuel olarak tarihe göre sırala (orderBy index gerekebilir)
-        items.sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return dateB - dateA; // En yeni önce
-        });
-        setBookings(items);
-      } finally {
+    if (!user?.uid) return;
+
+    setIsLoading(true);
+    // Real-time listener ekle - app'ten yapılan değişiklikler otomatik güncellenecek
+    const q = query(
+      collection(db, "bookings"),
+      where("customerId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        try {
+          console.log('[Customer Bookings] Snapshot update:', {
+            userUid: user.uid,
+            totalDocs: snapshot.docs.length,
+          });
+          const items: Booking[] = snapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+              id: docSnap.id,
+              service: data.service || "-",
+              branch: data.branch || "-",
+              preferredDate: data.preferredDate || "-",
+              preferredTime: data.preferredTime || "-",
+              status: (data.status as Booking["status"]) || "pending",
+              notes: data.notes,
+              createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : undefined,
+              shopName: data.shopName,
+              shopSlug: data.shopSlug,
+            };
+          });
+          // Manuel olarak tarihe göre sırala (orderBy index gerekebilir)
+          items.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA; // En yeni önce
+          });
+          setBookings(items);
+          setIsLoading(false);
+        } catch (error) {
+          console.error('[Customer Bookings] Snapshot error:', error);
+          setIsLoading(false);
+        }
+      },
+      (error) => {
+        console.error('[Customer Bookings] Listener error:', error);
         setIsLoading(false);
       }
-    };
+    );
 
-    if (user?.uid) {
-      loadBookings();
-    }
+    return () => unsubscribe();
   }, [user?.uid]);
 
   const formattedBookings = useMemo(() => {

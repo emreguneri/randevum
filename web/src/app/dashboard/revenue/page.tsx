@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -55,40 +55,46 @@ export default function RevenueDashboardPage() {
     }
   }, [user?.uid, user?.role]);
 
-  const fetchBookings = useCallback(async () => {
-    if (user?.role !== "admin") {
+  useEffect(() => {
+    if (user?.role !== "admin" || !user?.uid) {
       setLoading(false);
       return;
     }
-    try {
-      setLoading(true);
-      const snapshot = await getDocs(collection(db, "bookings"));
-      const items: Booking[] = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          status: (data.status as Booking["status"]) || "pending",
-          preferredDate: data.preferredDate || "",
-          createdAt: data.createdAt,
-          shopSlug: data.shopSlug,
-        };
-      });
-      const filtered = shopSlugs.length
-        ? items.filter((item) => item.shopSlug && shopSlugs.includes(item.shopSlug))
-        : items;
-      setBookings(filtered);
-    } catch (error) {
-      console.error("[RevenueDashboard] fetch error", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.role, shopSlugs]);
 
-  useEffect(() => {
-    if (user?.role === "admin") {
-      fetchBookings();
-    }
-  }, [fetchBookings, user?.role]);
+    setLoading(true);
+    // Real-time listener ekle - app'ten yapılan değişiklikler otomatik güncellenecek
+    const unsubscribe = onSnapshot(
+      collection(db, "bookings"),
+      (snapshot) => {
+        try {
+          const items: Booking[] = snapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+              id: docSnap.id,
+              status: (data.status as Booking["status"]) || "pending",
+              preferredDate: data.preferredDate || "",
+              createdAt: data.createdAt,
+              shopSlug: data.shopSlug,
+            };
+          });
+          const filtered = shopSlugs.length
+            ? items.filter((item) => item.shopSlug && shopSlugs.includes(item.shopSlug))
+            : items;
+          setBookings(filtered);
+          setLoading(false);
+        } catch (error) {
+          console.error("[RevenueDashboard] snapshot error", error);
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error("[RevenueDashboard] listener error", error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user?.role, user?.uid, shopSlugs]);
 
   const stats: Stats = useMemo(() => {
     const now = new Date();
@@ -158,10 +164,10 @@ export default function RevenueDashboardPage() {
             </p>
           </div>
           <button
-            onClick={fetchBookings}
+            onClick={() => window.location.reload()}
             className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white transition hover:border-white/60"
           >
-            Yenile
+            Sayfayı Yenile
           </button>
         </header>
 

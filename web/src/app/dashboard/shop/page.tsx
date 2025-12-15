@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, setDoc, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -52,7 +52,14 @@ export default function ShopSettingsPage() {
     const checkSubscription = async () => {
       if (loading) return;
       
-      if (user?.role !== "admin") {
+      if (!user) {
+        router.replace("/auth/login");
+        return;
+      }
+      if (user.role === "admin") {
+        // Admin kullanıcılar devam edebilir
+      } else {
+        // Admin değilse login sayfasına yönlendir
         router.replace("/auth/login");
         return;
       }
@@ -107,39 +114,48 @@ export default function ShopSettingsPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    const loadShop = async () => {
-      if (!user?.uid) return;
-      setLoadingShop(true);
-      try {
-        const shopQuery = query(collection(db, "shops"), where("ownerId", "==", user.uid));
-        const snapshot = await getDocs(shopQuery);
-        if (!snapshot.empty) {
-          const shopDoc = snapshot.docs[0];
-          const data = shopDoc.data();
-          setDocId(shopDoc.id);
-          setSlug(data.slug || "");
-          setName(data.name || "");
-          setAddress(data.address || "");
-          setDescription(data.description || "");
-          setLogo(data.logo || "");
-          setPhotos(Array.isArray(data.photos) ? data.photos : []);
-          setPhone(data.phone || "");
-          setInstagramUrl(data.instagramUrl || "");
-          setServices(data.services || []);
-          setOpeningHour(data.workingHours?.start || "09:00");
-          setClosingHour(data.workingHours?.end || "20:00");
-          setWorkingDays(Array.isArray(data.workingDays) && data.workingDays.length > 0 ? data.workingDays : WEEK_DAYS.map((day) => day.value));
-          setTimezone(data.timezone || "Europe/Istanbul");
-          setStaff(data.staff || []);
+    if (!user?.uid) return;
+
+    setLoadingShop(true);
+    const shopQuery = query(collection(db, "shops"), where("ownerId", "==", user.uid));
+    
+    // Real-time listener ekle - app'ten yapılan değişiklikler otomatik güncellenecek
+    const unsubscribe = onSnapshot(
+      shopQuery,
+      (snapshot) => {
+        try {
+          if (!snapshot.empty) {
+            const shopDoc = snapshot.docs[0];
+            const data = shopDoc.data();
+            setDocId(shopDoc.id);
+            setSlug(data.slug || "");
+            setName(data.name || "");
+            setAddress(data.address || "");
+            setDescription(data.description || "");
+            setLogo(data.logo || "");
+            setPhotos(Array.isArray(data.photos) ? data.photos : []);
+            setPhone(data.phone || "");
+            setInstagramUrl(data.instagramUrl || "");
+            setServices(data.services || []);
+            setOpeningHour(data.workingHours?.start || "09:00");
+            setClosingHour(data.workingHours?.end || "20:00");
+            setWorkingDays(Array.isArray(data.workingDays) && data.workingDays.length > 0 ? data.workingDays : WEEK_DAYS.map((day) => day.value));
+            setTimezone(data.timezone || "Europe/Istanbul");
+            setStaff(data.staff || []);
+          }
+          setLoadingShop(false);
+        } catch (error) {
+          console.error("[ShopSettings] snapshot error", error);
+          setLoadingShop(false);
         }
-      } finally {
+      },
+      (error) => {
+        console.error("[ShopSettings] listener error", error);
         setLoadingShop(false);
       }
-    };
+    );
 
-    if (user?.uid) {
-      loadShop();
-    }
+    return () => unsubscribe();
   }, [user?.uid]);
 
   const handleServiceChange = (index: number, field: keyof ServiceInput, value: string) => {

@@ -6,6 +6,7 @@ import {
     collection,
     doc,
     getDocs,
+    onSnapshot,
     orderBy,
     query,
     updateDoc,
@@ -64,53 +65,64 @@ export default function BookingsDashboardPage() {
     }
   }, [user?.uid, user?.role]);
 
-  const fetchBookings = useCallback(async () => {
-    if (user?.role !== "admin") {
+  useEffect(() => {
+    if (user?.role !== "admin" || !user?.uid) {
       setLoading(false);
       return;
     }
-    try {
-      setLoading(true);
-      const bookingsQuery = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(bookingsQuery);
-      const items: Booking[] = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          name: data.name || "-",
-          phone: data.phone || "-",
-          service: data.service || "-",
-          branch: data.branch || "-",
-          preferredDate: data.preferredDate || "-",
-          preferredTime: data.preferredTime || "-",
-          notes: data.notes || "",
-          status: (data.status as Booking["status"]) || "pending",
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : undefined,
-          shopName: data.shopName || "-",
-          shopSlug: data.shopSlug,
-          customerEmail: data.customerEmail || null,
-        };
-      });
-      const filtered = shopSlugs.length
-        ? items.filter((item) => item.shopSlug && shopSlugs.includes(item.shopSlug))
-        : items;
-      setBookings(filtered);
-    } catch (error) {
-      console.error("[BookingsDashboard] fetch error", error);
-      setFeedback({
-        type: "error",
-        message: "Randevular yüklenirken bir sorun oluştu.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.role, shopSlugs]);
 
-  useEffect(() => {
-    if (user?.role === "admin") {
-      fetchBookings();
-    }
-  }, [fetchBookings, user?.role]);
+    setLoading(true);
+    const bookingsQuery = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
+    
+    // Real-time listener ekle - app'ten yapılan değişiklikler otomatik güncellenecek
+    const unsubscribe = onSnapshot(
+      bookingsQuery,
+      (snapshot) => {
+        try {
+          const items: Booking[] = snapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+              id: docSnap.id,
+              name: data.name || "-",
+              phone: data.phone || "-",
+              service: data.service || "-",
+              branch: data.branch || "-",
+              preferredDate: data.preferredDate || "-",
+              preferredTime: data.preferredTime || "-",
+              notes: data.notes || "",
+              status: (data.status as Booking["status"]) || "pending",
+              createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : undefined,
+              shopName: data.shopName || "-",
+              shopSlug: data.shopSlug,
+              customerEmail: data.customerEmail || null,
+            };
+          });
+          const filtered = shopSlugs.length
+            ? items.filter((item) => item.shopSlug && shopSlugs.includes(item.shopSlug))
+            : items;
+          setBookings(filtered);
+          setLoading(false);
+        } catch (error) {
+          console.error("[BookingsDashboard] snapshot error", error);
+          setFeedback({
+            type: "error",
+            message: "Randevular yüklenirken bir sorun oluştu.",
+          });
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error("[BookingsDashboard] listener error", error);
+        setFeedback({
+          type: "error",
+          message: "Randevular yüklenirken bir sorun oluştu.",
+        });
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user?.role, user?.uid, shopSlugs]);
 
   const formattedBookings = useMemo(() => {
     return bookings.map((booking) => {
@@ -158,10 +170,10 @@ export default function BookingsDashboardPage() {
             </p>
           </div>
           <button
-            onClick={fetchBookings}
+            onClick={() => window.location.reload()}
             className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2 text-sm font-medium text-white transition hover:border-white/60"
           >
-            Yenile
+            Sayfayı Yenile
           </button>
         </header>
 
