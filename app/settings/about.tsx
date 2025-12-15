@@ -1,6 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function About() {
   return (
@@ -16,7 +16,11 @@ export default function About() {
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <View style={styles.logo}>
-            <IconSymbol name="scissors" size={48} color="#ef4444" />
+            <Image 
+              source={require('@/assets/images/icon.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.appName}>Randevum</Text>
           <Text style={styles.appVersion}>Versiyon 1.0.0</Text>
@@ -25,10 +29,13 @@ export default function About() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Uygulama Hakkında</Text>
           <Text style={styles.description}>
-            Randevum, berber ve güzellik salonlarından kolayca randevu almanızı sağlayan modern bir uygulamadır.
+            Randevum, randevu sistemi ile çalışan tüm işletmeler için kapsamlı bir randevu yönetim platformudur. Berber, kuaför, güzellik salonu, cilt bakım merkezi, pilates stüdyosu, fizyoterapi kliniği, psikolog, diş hekimi ve daha birçok hizmet sektöründen işletmeler için tasarlanmıştır.
           </Text>
           <Text style={styles.description}>
-            İşletme sahipleri dükkanlarını kaydedip randevularını yönetebilir, müşteriler ise favori dükkanlarını bulup hızlıca randevu alabilir.
+            İşletme sahipleri, dükkanlarını platforma kaydederek randevularını dijital ortamda yönetebilir, müşteri iletişimini güçlendirebilir ve işletmelerini büyütebilir. Müşteriler ise yakınlarındaki işletmeleri keşfedebilir, favori dükkanlarını kaydedebilir ve birkaç dokunuşla kolayca randevu alabilir.
+          </Text>
+          <Text style={styles.description}>
+            Modern teknoloji ile geliştirilmiş Randevum, hem işletme sahipleri hem de müşteriler için zaman tasarrufu sağlayan, kullanıcı dostu bir deneyim sunar.
           </Text>
         </View>
 
@@ -62,11 +69,19 @@ export default function About() {
           <Text style={styles.sectionTitle}>İletişim</Text>
           <View style={styles.contactInfo}>
             <Text style={styles.contactLabel}>E-posta:</Text>
-            <Text style={styles.contactValue}>info@randevum.com</Text>
+            <Text style={styles.contactValue}>randevum.iletisim@gmail.com</Text>
+          </View>
+          <View style={styles.contactInfo}>
+            <Text style={styles.contactLabel}>Telefon:</Text>
+            <Text style={styles.contactValue}>0539 240 11 11</Text>
+          </View>
+          <View style={styles.contactInfo}>
+            <Text style={styles.contactLabel}>Çalışma Saatleri:</Text>
+            <Text style={styles.contactValue}>7/24 ulaşılabilir</Text>
           </View>
           <View style={styles.contactInfo}>
             <Text style={styles.contactLabel}>Web:</Text>
-            <Text style={styles.contactValue}>www.randevum.com</Text>
+            <Text style={styles.contactValue}>www.onlinerandevum.com</Text>
           </View>
         </View>
 
@@ -131,6 +146,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   appName: {
     fontSize: 28,

@@ -44,10 +44,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     (async () => {
       try {
         const value = await AsyncStorage.getItem('guestMode');
-        setGuestModeState(value === 'true');
+        const hasGuestMode = value === 'true';
+        
+        // Eğer guest mode kaydedilmemişse ve kullanıcı giriş yapmamışsa, otomatik olarak guest mode'u aktif et
+        if (!hasGuestMode) {
+          // Firebase auth durumunu kontrol et
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            // Kullanıcı giriş yapmamış ve guest mode kaydedilmemişse, otomatik guest mode aktif et
+            await AsyncStorage.setItem('guestMode', 'true');
+            setGuestModeState(true);
+            return;
+          }
+        }
+        
+        setGuestModeState(hasGuestMode);
       } catch (error) {
         console.error('Error loading guest mode:', error);
-        setGuestModeState(false);
+        // Hata durumunda da guest mode'u aktif et (kullanıcı deneyimi için)
+        setGuestModeState(true);
       }
     })();
   }, []);
@@ -110,10 +125,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!firebaseUser) {
         setProfile(null);
+        // Kullanıcı giriş yapmamışsa ve guest mode da yoksa, otomatik guest mode aktif et
+        const savedGuestMode = await AsyncStorage.getItem('guestMode');
+        if (savedGuestMode !== 'true') {
+          await AsyncStorage.setItem('guestMode', 'true');
+          setGuestModeState(true);
+        }
         setLoading(false);
         return;
       }
 
+      // Kullanıcı giriş yapmışsa guest mode'u temizle
       AsyncStorage.removeItem('guestMode').catch(() => {
         /* ignore */
       });

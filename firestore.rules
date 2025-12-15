@@ -28,12 +28,13 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       
       // Kullanıcılar sadece kendi verilerini oluşturabilir (kayıt sırasında)
+      // Email kontrolü kaldırıldı (kayıt sırasında token henüz hazır olmayabilir)
       allow create: if isOwner(userId) && 
-                       request.resource.data.uid == userId &&
-                       request.resource.data.email == request.auth.token.email;
+                       request.resource.data.uid == userId;
       
       // Kullanıcılar sadece kendi verilerini güncelleyebilir
       // Ancak role ve subscriptionStatus gibi kritik alanlar sadece backend tarafından güncellenebilir
+      // merge: true kullanıldığında bu bir update işlemi olarak algılanabilir, bu yüzden update kuralı da gerekiyor
       allow update: if isOwner(userId) && 
                        (!request.resource.diff(resource).affectedKeys().hasAny(['role', 'subscriptionStatus', 'subscriptionEndsAt', 'iyzico']));
       

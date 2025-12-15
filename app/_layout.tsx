@@ -24,21 +24,37 @@ function RootLayoutNav() {
 
     const inAuthGroup = currentSegment === '(tabs)';
     const inLoginPage = currentSegment === 'login' || currentSegment === 'register';
+    const isInitialLoad = !currentSegment || currentSegment === 'index';
 
     // auth.currentUser'ı da kontrol et (login sonrası state güncellenene kadar)
     const currentUser = auth.currentUser;
-    const canAccessTabs = !!user || !!currentUser || guestMode;
-
-    // Sadece giriş yapmamış kullanıcıları login'e yönlendir
-    if (!canAccessTabs && inAuthGroup) {
-      router.replace('/login');
-    } 
-    // Guest mode'da olan kullanıcılar login/register sayfalarına gidebilir
-    // Bu yüzden guest mode kontrolü ekliyoruz
-    else if ((!!user || !!currentUser) && !guestMode && inLoginPage) {
-      // Sadece gerçek kullanıcı giriş yapmışsa (guest mode değilse) ve login/register sayfasındaysa tabs'a yönlendir
+    
+    // Guest mode'da olan kullanıcılar tabs'a erişebilir ama login/register sayfalarına da gidebilir
+    // Bu yüzden guest mode kontrolünü ayrı tutuyoruz
+    const hasAuthenticatedUser = !!user || !!currentUser;
+    
+    // İlk açılışta guest mode'da olan kullanıcıları direkt tabs'a yönlendir
+    if (guestMode && isInitialLoad) {
       router.replace('/(tabs)');
+      return;
     }
+    
+    // Sadece giriş yapmamış ve guest mode'da olmayan kullanıcıları login'e yönlendir
+    // Guest mode'da olan kullanıcılar tabs'a erişebilir, bu yüzden onları login'e yönlendirme
+    if (!hasAuthenticatedUser && !guestMode && inAuthGroup) {
+      router.replace('/login');
+      return;
+    } 
+    
+    // Eğer gerçek kullanıcı giriş yapmışsa (guest mode değilse) ve login/register sayfasındaysa tabs'a yönlendir
+    // Guest mode'da olan kullanıcılar login/register sayfalarında kalabilir, bu yüzden guest mode kontrolü yapıyoruz
+    if (hasAuthenticatedUser && !guestMode && inLoginPage) {
+      router.replace('/(tabs)');
+      return;
+    }
+    
+    // Guest mode'da olan kullanıcılar login/register sayfalarında kalabilir, yönlendirme yapma
+    // Guest mode'da olan kullanıcılar tabs'a erişebilir, yönlendirme yapma
   }, [user, guestMode, loading, segments, router]);
 
   return (

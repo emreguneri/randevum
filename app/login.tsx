@@ -26,7 +26,7 @@ export default function LoginScreen() {
       
       // onAuthStateChanged'in tetiklenmesi için kısa bir bekleme
       // Bu sayede _layout.tsx'teki user state'i güncellenir
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       router.replace('/(tabs)');
     } catch (error: any) {
@@ -73,7 +73,10 @@ export default function LoginScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => {
+              // Geri tuşuna basıldığında profilim sekmesine dön ve misafir modunu koru
+              router.replace('/(tabs)/profile');
+            }}
           >
             <IconSymbol name="chevron.left" size={24} color="#fff" />
           </TouchableOpacity>

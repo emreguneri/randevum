@@ -188,7 +188,7 @@ function CalendarView({
 }
 
 export default function ProfileScreen() {
-  const { user, guestMode, setGuestMode } = useAuth();
+  const { user, profile, guestMode, setGuestMode } = useAuth();
   const [userType, setUserType] = useState<'customer' | 'admin'>('customer'); // 'customer' veya 'admin'
   
   // Guest mode'da önceki kullanıcı bilgilerini gösterme
@@ -226,27 +226,55 @@ export default function ProfileScreen() {
         setUserType('customer');
         return;
       }
+      
+      // Kullanıcı giriş yapmışsa ve profile yüklenmişse, önce role kontrolü yap
+      if (user && profile) {
+        // Eğer profile'da admin role'ü varsa, direkt admin moduna geç
+        if (profile.role === 'admin') {
+          setUserType('admin');
+          AsyncStorage.setItem('selectedUserType', 'admin').catch(() => {});
+          // Admin ise diğer işlemleri yap
+          loadSubscriptionInfo();
+          loadShopInfo();
+          loadAppointments();
+          return;
+        }
+      }
+      
+      // Profile henüz yüklenmemişse veya admin değilse, normal akışı takip et
       loadUserTypePreference();
       loadSubscriptionInfo();
       loadShopInfo();
       loadAppointments();
       loadStats();
-    }, [guestMode])
+    }, [guestMode, user, profile])
   );
 
   // Kullanıcının seçimini AsyncStorage'dan yükle
   const loadUserTypePreference = async () => {
     try {
+      // Önce profile'dan role kontrolü yap (en güncel bilgi)
+      if (profile?.role === 'admin') {
+        setUserType('admin');
+        await AsyncStorage.setItem('selectedUserType', 'admin');
+        return;
+      }
+
       // Önce kullanıcının manuel seçimini kontrol et
       const savedUserType = await AsyncStorage.getItem('selectedUserType');
       if (savedUserType === 'customer' || savedUserType === 'admin') {
         // Kullanıcının manuel seçimi varsa, onu kullan
-        setUserType(savedUserType);
+        // Ama eğer profile'da admin role'ü varsa, onu önceliklendir
+        if (profile?.role === 'admin') {
+          setUserType('admin');
+          await AsyncStorage.setItem('selectedUserType', 'admin');
+        } else {
+          setUserType(savedUserType);
+        }
         return;
       }
       
-      // Eğer manuel seçim yoksa, otomatik kontrol yap (sadece ilk yüklemede)
-      // Ama otomatik tespit edilen değeri kaydetme, kullanıcı manuel seçim yapana kadar
+      // Eğer manuel seçim yoksa, otomatik kontrol yap
       await checkUserType();
     } catch (error) {
       console.error('Error loading user type preference:', error);
@@ -257,12 +285,21 @@ export default function ProfileScreen() {
 
   const checkUserType = async () => {
     try {
+      // Önce kullanıcının profile'ını kontrol et (AuthContext'ten)
+      if (profile?.role === 'admin') {
+        // Kullanıcı admin role'üne sahipse direkt admin moduna geç
+        setUserType('admin');
+        await AsyncStorage.setItem('selectedUserType', 'admin');
+        return;
+      }
+
       // Önce businessOwner kontrolü yap (ödeme yapılmış işletme sahipleri)
       const businessOwner = await AsyncStorage.getItem('businessOwner');
       if (businessOwner) {
         const parsed = JSON.parse(businessOwner);
         if (parsed.paymentStatus === 'active') {
           setUserType('admin');
+          await AsyncStorage.setItem('selectedUserType', 'admin');
           return;
         }
       }
@@ -271,8 +308,10 @@ export default function ProfileScreen() {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          if (userData.role === 'admin' || userData.subscriptionStatus === 'active') {
+          // Eğer role admin ise, ödeme durumuna bakmadan admin moduna geç
+          if (userData.role === 'admin') {
             setUserType('admin');
+            await AsyncStorage.setItem('selectedUserType', 'admin');
             return;
           }
         }
@@ -283,14 +322,26 @@ export default function ProfileScreen() {
       if (shopInfo) {
         const parsed = JSON.parse(shopInfo);
         if (parsed.name) {
-          setUserType('admin');
-          return;
+          // Shop info varsa ve kullanıcı admin role'üne sahipse admin moduna geç
+          if (user?.uid) {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              if (userData.role === 'admin') {
+                setUserType('admin');
+                await AsyncStorage.setItem('selectedUserType', 'admin');
+                return;
+              }
+            }
+          }
         }
       }
       setUserType('customer');
+      await AsyncStorage.setItem('selectedUserType', 'customer');
     } catch (error) {
       console.error('Error checking user type:', error);
       setUserType('customer');
+      await AsyncStorage.setItem('selectedUserType', 'customer');
     }
   };
 
@@ -381,7 +432,7 @@ export default function ProfileScreen() {
   };
 
   const handleBusinessOwnerToggle = async () => {
-    // Misafir kullanıcı veya müşteri kontrolü
+    // Misafir kullanıcı veya giriş yapmamış kullanıcı kontrolü
     if (guestMode || !user) {
       Alert.alert(
         'İşletme Sahibi Hesabı Gerekli',
@@ -394,14 +445,20 @@ export default function ProfileScreen() {
           {
             text: 'Kayıt Ol',
             onPress: () => {
-              router.push('/register');
+              // Modal kapanması için kısa bir bekleme
+              setTimeout(() => {
+                router.replace('/register');
+              }, 100);
             },
             style: 'default',
           },
           {
             text: 'Giriş Yap',
             onPress: () => {
-              router.push('/login');
+              // Modal kapanması için kısa bir bekleme
+              setTimeout(() => {
+                router.replace('/login');
+              }, 100);
             },
             style: 'default',
           },
@@ -410,6 +467,14 @@ export default function ProfileScreen() {
       return;
     }
 
+    // Kullanıcı zaten admin role'üne sahipse, direkt admin moduna geç
+    if (profile?.role === 'admin') {
+      setUserType('admin');
+      await AsyncStorage.setItem('selectedUserType', 'admin');
+      return;
+    }
+
+    // Kullanıcı admin değilse, ödeme kontrolü yap
     let hasActiveSubscription = false;
 
     if (user?.uid) {
@@ -843,14 +908,20 @@ export default function ProfileScreen() {
                 await logout();
               }
               
-              // Guest mode'u temizle
-              await setGuestMode(false);
+              // AsyncStorage'dan kullanıcı verilerini temizle
+              await AsyncStorage.removeItem('selectedUserType');
+              await AsyncStorage.removeItem('businessOwner');
+              await AsyncStorage.removeItem('shopInfo');
+              await AsyncStorage.removeItem('pendingBusinessOwner');
+              
+              // Misafir moduna dön
+              await setGuestMode(true);
               
               // State'lerin güncellenmesi için bekleme (onAuthStateChanged'in tetiklenmesi için)
               await new Promise(resolve => setTimeout(resolve, 500));
               
-              // Giriş ekranına yönlendir - replace kullanarak geri dönüşü engelle
-              router.replace('/login');
+              // Ana sayfaya yönlendir - misafir modunda
+              router.replace('/(tabs)');
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert('Hata', 'Çıkış yapılırken bir hata oluştu');
@@ -894,6 +965,40 @@ export default function ProfileScreen() {
         <TouchableOpacity 
           style={[styles.toggleButton, userType === 'customer' && styles.activeToggle]}
           onPress={async () => {
+            // Misafir kullanıcı veya giriş yapmamış kullanıcı kontrolü
+            if (guestMode || !user) {
+              Alert.alert(
+                'Müşteri Hesabı Gerekli',
+                'Müşteri özelliklerini kullanmak için müşteri hesabı ile giriş yapmanız gerekmektedir.',
+                [
+                  {
+                    text: 'Vazgeç',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Kayıt Ol',
+                    onPress: () => {
+                      setTimeout(() => {
+                        router.replace('/register');
+                      }, 100);
+                    },
+                    style: 'default',
+                  },
+                  {
+                    text: 'Giriş Yap',
+                    onPress: () => {
+                      setTimeout(() => {
+                        router.replace('/login');
+                      }, 100);
+                    },
+                    style: 'default',
+                  },
+                ]
+              );
+              return;
+            }
+            
+            // Giriş yapmış kullanıcı için userType'ı güncelle
             setUserType('customer');
             await AsyncStorage.setItem('selectedUserType', 'customer');
           }}
@@ -932,8 +1037,8 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* Mekan Ekle Butonu - İşletme Sahibi için */}
-      {userType === 'admin' && (
+      {/* Mekan Ekle Butonu - İşletme Sahibi için (Sadece ödeme yapılmışsa) */}
+      {userType === 'admin' && subscriptionInfo?.paymentStatus === 'active' && (
         <View style={styles.section}>
           <TouchableOpacity 
             style={styles.addShopButton}
@@ -945,20 +1050,21 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* Active Appointments */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {userType === 'customer' ? 'Aktif Randevularım' : 'Randevu Takvimi'}
-          </Text>
-          {userType === 'customer' && (
-            <TouchableOpacity onPress={() => router.push('/appointments/active')}>
-              <Text style={styles.seeAllText}>Tümünü Gör</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+      {/* Active Appointments - Sadece giriş yapmış kullanıcılar için */}
+      {!guestMode && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              {userType === 'customer' ? 'Aktif Randevularım' : 'Randevu Takvimi'}
+            </Text>
+            {userType === 'customer' && (
+              <TouchableOpacity onPress={() => router.push('/appointments/active')}>
+                <Text style={styles.seeAllText}>Tümünü Gör</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         
-        {userType === 'admin' ? (
+        {userType === 'admin' && subscriptionInfo?.paymentStatus === 'active' ? (
           <CalendarView 
             appointments={activeAppointments}
             formatDate={formatDate}
@@ -1038,10 +1144,12 @@ export default function ProfileScreen() {
         )}
           </>
         )}
-      </View>
+        </View>
+      )}
 
-      {/* Past Appointments */}
-      <View style={styles.section}>
+      {/* Past Appointments - Sadece giriş yapmış kullanıcılar için */}
+      {!guestMode && (
+        <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Geçmiş Randevularım</Text>
           <TouchableOpacity onPress={() => router.push('/appointments/history')}>
@@ -1102,10 +1210,11 @@ export default function ProfileScreen() {
             </View>
           ))
         )}
-      </View>
+        </View>
+      )}
 
-      {/* Admin Features */}
-      {userType === 'admin' && (
+      {/* Admin Features - Sadece ödeme yapılmışsa göster */}
+      {userType === 'admin' && subscriptionInfo?.paymentStatus === 'active' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>İşletme Yönetimi</Text>
           

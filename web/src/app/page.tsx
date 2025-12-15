@@ -1184,13 +1184,13 @@ export default function Home() {
               </p>
               <div className="space-y-4 text-sm text-slate-200/70">
                 <p>
-                  <span className="text-white">Telefon:</span> +90 (212) 555 00 00
+                  <span className="text-white">Telefon:</span> 0539 240 11 11
                 </p>
                 <p>
-                  <span className="text-white">E-posta:</span> destek@onlinerandevum.com
+                  <span className="text-white">E-posta:</span> randevum.iletisim@gmail.com
                 </p>
                 <p>
-                  <span className="text-white">Çalışma Saatleri:</span> Pazartesi - Cumartesi 09:00 - 20:00
+                  <span className="text-white">Çalışma Saatleri:</span> 7/24 ulaşılabilir
                 </p>
               </div>
             </div>
@@ -1213,6 +1213,11 @@ export default function Home() {
               <h4 className="text-sm font-semibold text-white mb-4">Yasal</h4>
               <ul className="space-y-2">
                 <li>
+                  <Link href="/about" className="text-sm text-slate-300/70 hover:text-white transition-colors">
+                    Hakkımızda
+                  </Link>
+                </li>
+                <li>
                   <Link href="/privacy" className="text-sm text-slate-300/70 hover:text-white transition-colors">
                     Gizlilik Politikası
                   </Link>
@@ -1222,14 +1227,24 @@ export default function Home() {
                     Kullanım Koşulları
                   </Link>
                 </li>
+                <li>
+                  <Link href="/delivery-return" className="text-sm text-slate-300/70 hover:text-white transition-colors">
+                    Teslimat ve İade Şartları
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/distance-sales" className="text-sm text-slate-300/70 hover:text-white transition-colors">
+                    Mesafeli Satış Sözleşmesi
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="text-sm font-semibold text-white mb-4">İletişim</h4>
               <ul className="space-y-2">
                 <li>
-                  <a href="mailto:support@onlinerandevum.com" className="text-sm text-slate-300/70 hover:text-white transition-colors">
-                    support@onlinerandevum.com
+                  <a href="mailto:randevum.iletisim@gmail.com" className="text-sm text-slate-300/70 hover:text-white transition-colors">
+                    randevum.iletisim@gmail.com
                   </a>
                 </li>
                 <li>
@@ -1241,9 +1256,37 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-8 border-t border-white/10 pt-8">
-            <p className="text-center text-sm text-slate-300/70">
-              © {new Date().getFullYear()} Randevum. Tüm hakları saklıdır.
-            </p>
+            <div className="flex flex-col items-center gap-6">
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <p className="text-sm text-slate-300/70">Güvenli Ödeme:</p>
+                <div className="flex items-center gap-4">
+                  {/* Visa Logo */}
+                  <div className="flex items-center justify-center bg-white rounded px-3 py-2 h-10">
+                    <span className="text-blue-600 font-bold text-lg tracking-wider">VISA</span>
+                  </div>
+                  {/* MasterCard Logo */}
+                  <div className="flex items-center justify-center bg-white rounded px-3 py-2 h-10">
+                    <div className="flex items-center gap-1">
+                      <div className="w-6 h-6 rounded-full bg-red-500"></div>
+                      <div className="w-6 h-6 rounded-full bg-yellow-500 -ml-3"></div>
+                    </div>
+                    <span className="text-orange-600 font-bold text-xs ml-2">Mastercard</span>
+                  </div>
+                  {/* iyzico Logo */}
+                  <a 
+                    href="https://www.iyzico.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center bg-white rounded px-3 py-2 h-10 hover:opacity-80 transition-opacity"
+                  >
+                    <span className="text-[#c49a6c] font-bold text-sm">iyzico ile Öde</span>
+                  </a>
+                </div>
+              </div>
+              <p className="text-center text-sm text-slate-300/70">
+                © {new Date().getFullYear()} Randevum. Tüm hakları saklıdır.
+              </p>
+            </div>
           </div>
         </div>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8 text-sm text-slate-200/60 lg:flex-row lg:items-center lg:justify-between">
@@ -1257,9 +1300,12 @@ export default function Home() {
             Berber, kuaför, güzellik salonu, pilates ve terapi merkezleri için uçtan uca işletme yönetimi. KVKK, Mesafeli Satış ve BGYS
             politikalarımız kullanıcı panelinden erişilebilir.
           </p>
-          <div className="flex gap-4 text-xs">
+          <div className="flex flex-wrap gap-4 text-xs">
+            <Link href="/about" className="hover:text-white transition-colors">Hakkımızda</Link>
             <Link href="/privacy" className="hover:text-white transition-colors">Gizlilik Politikası</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Kullanım Koşulları</Link>
+            <Link href="/delivery-return" className="hover:text-white transition-colors">Teslimat ve İade</Link>
+            <Link href="/distance-sales" className="hover:text-white transition-colors">Mesafeli Satış</Link>
           </div>
         </div>
       </footer>

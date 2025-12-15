@@ -214,10 +214,11 @@ export default function HomeScreen() {
       filtered = filtered.filter((shop) => {
         const nameMatch = shop.name?.toLowerCase().includes(query);
         const addressMatch = shop.address?.toLowerCase().includes(query);
+        const categoryMatch = shop.category?.toLowerCase().includes(query);
         const serviceMatch = shop.services?.some((s: any) =>
           s.name?.toLowerCase().includes(query)
         );
-        return nameMatch || addressMatch || serviceMatch;
+        return nameMatch || addressMatch || categoryMatch || serviceMatch;
       });
     }
 
@@ -228,9 +229,35 @@ export default function HomeScreen() {
     <AnimatedTabScreen>
       <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerLeft} />
+        {selectedCategory || debouncedSearchQuery.trim() ? (
+          <TouchableOpacity 
+            onPress={() => {
+              // Debounce timer'ı temizle
+              if (debounceTimer.current) {
+                clearTimeout(debounceTimer.current);
+                debounceTimer.current = null;
+              }
+              // State'leri sıfırla
+              setSearchQuery('');
+              setDebouncedSearchQuery('');
+              setSelectedCategory(null);
+              // Filter'ı da sıfırla
+              setSelectedFilter('all');
+            }}
+            style={styles.headerBackButton}
+            activeOpacity={0.6}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <IconSymbol name="chevron.left" size={20} color="#fff" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerLeft} />
+        )}
         <Text style={styles.title}>Randevum</Text>
-        <TouchableOpacity style={styles.notificationButton}>
+        <TouchableOpacity 
+          style={styles.notificationButton}
+          onPress={() => router.push('/settings/notifications')}
+        >
           <IconSymbol name="bell" size={18} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -262,23 +289,14 @@ export default function HomeScreen() {
       <View style={styles.categoriesContainer}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
-            {selectedCategory ? `${selectedCategory} İşletmeleri` : 'Hizmet Kategorileri'}
+            {selectedCategory ? `${selectedCategory} İşletmeleri` : debouncedSearchQuery.trim() ? 'Arama Sonuçları' : 'Hizmet Kategorileri'}
           </Text>
-          {selectedCategory && (
-            <TouchableOpacity 
-              onPress={() => setSelectedCategory(null)}
-              style={styles.backButton}
-            >
-              <IconSymbol name="arrow.left" size={18} color="#ef4444" />
-              <Text style={styles.backButtonText}>Geri</Text>
-            </TouchableOpacity>
-          )}
         </View>
         
         {!selectedCategory ? (
           <>
-            <View style={styles.categoriesGrid}>
-              {[
+            {(() => {
+              const allCategories = [
                 { name: 'Berber', icon: 'scissors', color: '#ef4444', bgColor: '#fef2f2', gradient: ['#fee2e2', '#fef2f2'] },
                 { name: 'Güzellik', icon: 'sparkles', color: '#10b981', bgColor: '#d1fae5', gradient: ['#a7f3d0', '#d1fae5'] },
                 { name: 'Manikür', icon: 'hand.raised', color: '#f59e0b', bgColor: '#fef3c7', gradient: ['#fde68a', '#fef3c7'] },
@@ -297,22 +315,35 @@ export default function HomeScreen() {
                 { name: 'Diyetisyen', icon: 'leaf.fill', color: '#22c55e', bgColor: '#dcfce7', gradient: ['#86efac', '#dcfce7'] },
                 { name: 'Veteriner', icon: 'pawprint.fill', color: '#f59e0b', bgColor: '#fef3c7', gradient: ['#fde68a', '#fef3c7'] },
                 { name: 'Sauna', icon: 'drop.fill', color: '#3b82f6', bgColor: '#dbeafe', gradient: ['#93c5fd', '#dbeafe'] },
-              ].map((category, index) => (
-                <TouchableOpacity 
-                  key={index}
-                  style={styles.categoryCardGrid}
-                  onPress={() => setSelectedCategory(category.name)}
-                  activeOpacity={0.8}
-                >
-                  <View style={[styles.categoryCardInner, { backgroundColor: category.bgColor }]}>
-                    <View style={[styles.categoryIconGrid, { backgroundColor: category.color + '15' }]}>
-                      <IconSymbol name={category.icon as any} size={24} color={category.color} />
-                    </View>
-                    <Text style={styles.categoryTextGrid}>{category.name}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
+              ];
+              
+              // Arama sorgusu varsa kategorileri filtrele
+              const filteredCategories = debouncedSearchQuery.trim()
+                ? allCategories.filter(cat => 
+                    cat.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+                  )
+                : allCategories;
+              
+              return filteredCategories.length > 0 ? (
+                <View style={styles.categoriesGrid}>
+                  {filteredCategories.map((category, index) => (
+                    <TouchableOpacity 
+                      key={index}
+                      style={styles.categoryCardGrid}
+                      onPress={() => setSelectedCategory(category.name)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={[styles.categoryCardInner, { backgroundColor: category.bgColor }]}>
+                        <View style={[styles.categoryIconGrid, { backgroundColor: category.color + '15' }]}>
+                          <IconSymbol name={category.icon as any} size={24} color={category.color} />
+                        </View>
+                        <Text style={styles.categoryTextGrid}>{category.name}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null;
+            })()}
 
             {/* Öne Çıkan İşletmeler */}
             {savedShops.length > 0 && (
@@ -361,6 +392,79 @@ export default function HomeScreen() {
                       </TouchableOpacity>
                     ))}
                 </ScrollView>
+              </View>
+            )}
+            
+            {/* Arama sonuçları - İşletmeler */}
+            {debouncedSearchQuery.trim() && filteredShops.length > 0 && (
+              <View style={styles.popularContainer}>
+                <Text style={styles.sectionTitle}>İşletmeler</Text>
+                {filteredShops.map((shop, index) => (
+                  <TouchableOpacity 
+                    key={shop.slug || shop.id || shop.placeId || index} 
+                    style={styles.shopCard} 
+                    onPress={() => router.push({
+                      pathname: '/shop/[id]',
+                      params: { id: shop.slug || shop.id || shop.placeId || shop.name || index.toString() }
+                    })}
+                  >
+                    {shop.photos && shop.photos.length > 0 ? (
+                      <Image source={{ uri: shop.photos[0] }} style={styles.shopImage} />
+                    ) : (
+                      <View style={styles.shopImage}>
+                        <IconSymbol name="building.2.fill" size={32} color="#ef4444" />
+                      </View>
+                    )}
+                    <View style={styles.shopInfo}>
+                      <View style={styles.shopHeader}>
+                        <Text style={styles.shopName} numberOfLines={1}>{shop.name}</Text>
+                        {shop.rating && (
+                          <View style={styles.ratingBadge}>
+                            <IconSymbol name="star.fill" size={12} color="#fbbf24" />
+                            <Text style={styles.ratingText}>{shop.rating.toFixed(1)}</Text>
+                          </View>
+                        )}
+                      </View>
+                      
+                      {(shop.distance !== undefined) && (
+                        <View style={styles.distanceBadge}>
+                          <IconSymbol name="location.fill" size={12} color="#ef4444" />
+                          <Text style={styles.distanceText}>{shop.distance.toFixed(1)} km</Text>
+                        </View>
+                      )}
+                      
+                      {shop.address ? (
+                        <Text style={styles.shopAddress} numberOfLines={1}>{shop.address}</Text>
+                      ) : null}
+                      {shop.workingHours ? (
+                        <Text style={styles.shopHours}>{shop.workingHours}</Text>
+                      ) : null}
+                      {shop.services && shop.services.length > 0 && (
+                        <Text style={styles.shopServices} numberOfLines={1}>
+                          {shop.services.slice(0, 2).map((s: any) => s.name).join(', ')}
+                          {shop.services.length > 2 && '...'}
+                        </Text>
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.bookButton, !shop.isPaymentActive && styles.bookButtonDisabled]}
+                      onPress={() => {
+                        if (!shop.isPaymentActive) {
+                          Alert.alert('Abonelik Gerekli', 'Bu işletme abonelik satın almadığı için uygulama üzerinden randevu alınamaz.');
+                          return;
+                        }
+                        router.push({ pathname: '/booking', params: { shopId: shop.slug || shop.id || shop.placeId || shop.name || index.toString() } });
+                      }}
+                      disabled={!shop.isPaymentActive}
+                    >
+                      <Text
+                        style={[styles.bookButtonText, !shop.isPaymentActive && styles.bookButtonTextDisabled]}
+                      >
+                        Randevu Al
+                      </Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
           </>
@@ -546,12 +650,12 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </TouchableOpacity>
           ))
-        ) : searchQuery.trim() ? (
+        ) : debouncedSearchQuery.trim() ? (
           <View style={styles.emptyShops}>
             <IconSymbol name="magnifyingglass" size={48} color="#cbd5e1" />
             <Text style={styles.emptyShopsText}>Sonuç bulunamadı</Text>
             <Text style={styles.emptyShopsSubtext}>
-              "{searchQuery}" için arama sonucu bulunamadı
+              "{debouncedSearchQuery}" için arama sonucu bulunamadı
             </Text>
           </View>
         ) : selectedFilter === 'nearby' && !userLocation ? (
@@ -613,6 +717,17 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
   },
+  headerBackButton: {
+    width: 40,
+    height: 40,
+    minWidth: 40,
+    minHeight: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
   notificationButton: {
     width: 36,
     height: 36,
@@ -667,20 +782,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#fee2e2',
-  },
-  backButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ef4444',
-    marginLeft: 4,
   },
   sectionTitle: {
     fontSize: 18,

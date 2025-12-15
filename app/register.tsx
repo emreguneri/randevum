@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useAuth } from '@/contexts/AuthContext';
 import { createUserProfile, signUp } from '@/services/firebaseService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
@@ -9,6 +10,7 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, Te
 type UserType = 'customer' | 'business';
 
 export default function RegisterScreen() {
+  const { setGuestMode, refreshProfile } = useAuth();
   const [userType, setUserType] = useState<UserType>('customer');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -68,6 +70,13 @@ export default function RegisterScreen() {
         } else {
           await AsyncStorage.removeItem('pendingBusinessOwner');
         }
+
+        // Guest mode'u temizle
+        await setGuestMode(false);
+        
+        // Profile'ı yenile (AuthContext'teki onAuthStateChanged'in tetiklenmesi için bekle)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await refreshProfile();
       }
 
       Alert.alert('Başarılı', 'Hesabınız oluşturuldu!', [
@@ -114,7 +123,10 @@ export default function RegisterScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => {
+              // Geri tuşuna basıldığında profilim sekmesine dön ve misafir modunu koru
+              router.replace('/(tabs)/profile');
+            }}
           >
             <IconSymbol name="chevron.left" size={24} color="#fff" />
           </TouchableOpacity>

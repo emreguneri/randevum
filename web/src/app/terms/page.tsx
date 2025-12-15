@@ -216,7 +216,7 @@ export default function TermsOfServicePage() {
               </p>
               <div className="bg-[#0B0A0A] rounded-lg p-4 border border-[#2a1f1a]">
                 <p className="text-slate-300">
-                  <strong className="text-white">E-posta:</strong> support@onlinerandevum.com
+                  <strong className="text-white">E-posta:</strong> randevum.iletisim@gmail.com
                 </p>
                 <p className="text-slate-300 mt-2">
                   <strong className="text-white">Web:</strong>{" "}

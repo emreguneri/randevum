@@ -53,15 +53,15 @@ export default function Help() {
           <View style={styles.contactCard}>
             <View style={styles.contactItem}>
               <IconSymbol name="envelope.fill" size={20} color="#ef4444" />
-              <Text style={styles.contactText}>destek@randevum.com</Text>
+              <Text style={styles.contactText}>randevum.iletisim@gmail.com</Text>
             </View>
             <View style={styles.contactItem}>
               <IconSymbol name="phone.fill" size={20} color="#ef4444" />
-              <Text style={styles.contactText}>0850 123 45 67</Text>
+              <Text style={styles.contactText}>0539 240 11 11</Text>
             </View>
             <View style={styles.contactItem}>
               <IconSymbol name="clock.fill" size={20} color="#ef4444" />
-              <Text style={styles.contactText}>Pazartesi - Cuma: 09:00 - 18:00</Text>
+              <Text style={styles.contactText}>7/24 ulaşılabilir</Text>
             </View>
           </View>
         </View>

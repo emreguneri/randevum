@@ -1,5 +1,6 @@
 import { AnimatedTabScreen } from '@/components/animated-tab-screen';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -7,15 +8,24 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 
 export default function FavoritesScreen() {
   const [favorites, setFavorites] = useState<any[]>([]);
+  const { guestMode } = useAuth();
 
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
-    }, [])
+    }, [guestMode])
   );
 
   const loadFavorites = async () => {
     try {
+      // Misafir kullanıcı için favorileri yükleme ve temizleme
+      if (guestMode) {
+        // Misafir kullanıcı için favorileri temizle
+        await AsyncStorage.removeItem('favorites');
+        setFavorites([]);
+        return;
+      }
+
       const favoritesData = await AsyncStorage.getItem('favorites');
       const allShopsData = await AsyncStorage.getItem('allShops');
       const allShops = allShopsData ? JSON.parse(allShopsData) : [];
