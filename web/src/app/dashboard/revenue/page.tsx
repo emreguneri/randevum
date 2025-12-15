@@ -2,9 +2,9 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface Booking {
   id: string;
