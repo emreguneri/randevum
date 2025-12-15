@@ -10,7 +10,7 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, Te
 type UserType = 'customer' | 'business';
 
 export default function RegisterScreen() {
-  const { setGuestMode, refreshProfile } = useAuth();
+  const { setGuestMode } = useAuth();
   const [userType, setUserType] = useState<UserType>('customer');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -74,9 +74,9 @@ export default function RegisterScreen() {
         // Guest mode'u temizle
         await setGuestMode(false);
         
-        // Profile'ı yenile (AuthContext'teki onAuthStateChanged'in tetiklenmesi için bekle)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await refreshProfile();
+        // onAuthStateChanged'in profile'ı yüklemesi için bekle
+        // refreshProfile() çağrısını kaldırdık çünkü onAuthStateChanged zaten profile'ı yükleyecek
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
 
       Alert.alert('Başarılı', 'Hesabınız oluşturuldu!', [

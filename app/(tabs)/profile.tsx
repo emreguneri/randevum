@@ -212,6 +212,7 @@ export default function ProfileScreen() {
   const [stats, setStats] = useState({
     totalAppointments: 0,
     favoriteShops: 0,
+    averageRating: 0,
   });
   const [subscriptionInfo, setSubscriptionInfo] = useState<{
     paymentStatus: 'active' | 'inactive';
@@ -574,138 +575,167 @@ export default function ProfileScreen() {
 
   const loadStats = async () => {
     try {
-      // Toplam randevu sayısı
-      const appointmentsData = await AsyncStorage.getItem('appointments');
-      const totalAppointments = appointmentsData ? JSON.parse(appointmentsData).length : 0;
+      if (!user?.uid) {
+        // Giriş yapmamış kullanıcı için boş stats
+        setStats({
+          totalAppointments: 0,
+          favoriteShops: 0,
+          averageRating: 0,
+        });
+        return;
+      }
 
-      // Favori dükkan sayısı
-      const favoritesData = await AsyncStorage.getItem('favorites');
-      const favoriteShops = favoritesData ? JSON.parse(favoritesData).length : 0;
+      // Toplam randevu sayısı - Firestore'dan
+      const bookingsQuery = query(collection(db, 'bookings'), where('customerId', '==', user.uid));
+      const bookingsSnapshot = await getDocs(bookingsQuery);
+      const totalAppointments = bookingsSnapshot.size;
+
+      // Favori dükkan sayısı - Firestore'dan
+      const favoritesQuery = query(collection(db, 'favorites'), where('userId', '==', user.uid));
+      const favoritesSnapshot = await getDocs(favoritesQuery);
+      const favoriteShops = favoritesSnapshot.size;
+
+      // Ortalama puan - Kullanıcının aldığı randevulara verilen puanların ortalaması
+      let averageRating = 0;
+      try {
+        const reviewsQuery = query(collection(db, 'reviews'), where('customerId', '==', user.uid));
+        const reviewsSnapshot = await getDocs(reviewsQuery);
+        
+        if (reviewsSnapshot.size > 0) {
+          const ratings = reviewsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return data.rating || 0;
+          }).filter(rating => rating > 0);
+          
+          if (ratings.length > 0) {
+            const sum = ratings.reduce((acc, rating) => acc + rating, 0);
+            averageRating = sum / ratings.length;
+          }
+        }
+      } catch (reviewError) {
+        console.error('Error loading reviews:', reviewError);
+        averageRating = 0;
+      }
 
       setStats({
         totalAppointments,
         favoriteShops,
+        averageRating: Math.round(averageRating * 10) / 10, // 1 ondalık basamak
       });
     } catch (error) {
       console.error('Error loading stats:', error);
+      setStats({
+        totalAppointments: 0,
+        favoriteShops: 0,
+        averageRating: 0,
+      });
     }
   };
 
   const loadAppointments = async () => {
     try {
-      // Firestore'dan randevuları yükle
-      let bookingsQuery;
-      
+      // Giriş yapmış kullanıcı için sadece Firestore'dan yükle
       if (user?.uid) {
-        // Giriş yapmış kullanıcı - kendi randevularını getir
-        bookingsQuery = query(collection(db, 'bookings'), where('customerId', '==', user.uid));
-      } else {
-        // Guest mode - email ile ara
-        const guestEmail = await AsyncStorage.getItem('guestEmail');
-        if (guestEmail) {
-          bookingsQuery = query(collection(db, 'bookings'), where('customerEmail', '==', guestEmail));
-        } else {
-          // Email yoksa AsyncStorage'dan yükle (fallback)
-          const appointmentsData = await AsyncStorage.getItem('appointments');
-          if (appointmentsData) {
-            const parsed = JSON.parse(appointmentsData);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const active = parsed.filter((apt: any) => {
-              const aptDate = new Date(apt.date);
-              aptDate.setHours(0, 0, 0, 0);
-              return aptDate >= today && apt.status !== 'Tamamlandı' && apt.status !== 'İptal';
-            }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(0, 2);
-            
-            const past = parsed.filter((apt: any) => {
-              const aptDate = new Date(apt.date);
-              aptDate.setHours(0, 0, 0, 0);
-              return aptDate < today || apt.status === 'Tamamlandı' || apt.status === 'İptal';
-            }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
-            
-            setActiveAppointments(active);
-            setPastAppointments(past);
-          } else {
-            setActiveAppointments([]);
-            setPastAppointments([]);
-          }
-          return;
-        }
+        // Giriş yapmış kullanıcı - kendi randevularını getir (sadece customerId ile eşleşenler)
+        const bookingsQuery = query(collection(db, 'bookings'), where('customerId', '==', user.uid));
+        
+        const snapshot = await getDocs(bookingsQuery);
+        const bookings = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            shopId: data.shopId || data.shopSlug || '',
+            shopSlug: data.shopSlug || data.shopId || '',
+            shopName: data.shopName || '',
+            shopAddress: data.branch || '',
+            service: data.service || '',
+            date: data.preferredDate || '',
+            time: data.preferredTime || '',
+            status: data.status === 'pending' ? 'Beklemede' : 
+                    data.status === 'confirmed' ? 'Onaylandı' : 
+                    data.status === 'cancelled' ? 'İptal' : 'Beklemede',
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
+            recurringGroupId: data.recurringGroupId || null,
+          };
+        });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Aktif randevular (bugünden sonraki veya bugünkü, tamamlanmamış)
+        const active = bookings.filter((apt: any) => {
+          const aptDate = new Date(apt.date);
+          aptDate.setHours(0, 0, 0, 0);
+          return aptDate >= today && apt.status !== 'Tamamlandı' && apt.status !== 'İptal';
+        }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(0, 2);
+        
+        // Geçmiş randevular (bugünden önceki veya tamamlanmış)
+        const past = bookings.filter((apt: any) => {
+          const aptDate = new Date(apt.date);
+          aptDate.setHours(0, 0, 0, 0);
+          return aptDate < today || apt.status === 'Tamamlandı' || apt.status === 'İptal';
+        }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
+        
+        setActiveAppointments(active);
+        setPastAppointments(past);
+        return;
       }
+      
+      // Guest mode - email ile ara
+      const guestEmail = await AsyncStorage.getItem('guestEmail');
+      if (guestEmail) {
+        const bookingsQuery = query(collection(db, 'bookings'), where('customerEmail', '==', guestEmail));
+        
+        const snapshot = await getDocs(bookingsQuery);
+        const bookings = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            shopId: data.shopId || data.shopSlug || '',
+            shopSlug: data.shopSlug || data.shopId || '',
+            shopName: data.shopName || '',
+            shopAddress: data.branch || '',
+            service: data.service || '',
+            date: data.preferredDate || '',
+            time: data.preferredTime || '',
+            status: data.status === 'pending' ? 'Beklemede' : 
+                    data.status === 'confirmed' ? 'Onaylandı' : 
+                    data.status === 'cancelled' ? 'İptal' : 'Beklemede',
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
+            recurringGroupId: data.recurringGroupId || null,
+          };
+        });
 
-      const snapshot = await getDocs(bookingsQuery);
-      const bookings = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          shopId: data.shopId || data.shopSlug || '',
-          shopSlug: data.shopSlug || data.shopId || '',
-          shopName: data.shopName || '',
-          shopAddress: data.branch || '',
-          service: data.service || '',
-          date: data.preferredDate || '',
-          time: data.preferredTime || '',
-          status: data.status === 'pending' ? 'Beklemede' : 
-                  data.status === 'confirmed' ? 'Onaylandı' : 
-                  data.status === 'cancelled' ? 'İptal' : 'Beklemede',
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
-          recurringGroupId: data.recurringGroupId || null,
-        };
-      });
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Aktif randevular (bugünden sonraki veya bugünkü, tamamlanmamış)
+        const active = bookings.filter((apt: any) => {
+          const aptDate = new Date(apt.date);
+          aptDate.setHours(0, 0, 0, 0);
+          return aptDate >= today && apt.status !== 'Tamamlandı' && apt.status !== 'İptal';
+        }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(0, 2);
+        
+        // Geçmiş randevular (bugünden önceki veya tamamlanmış)
+        const past = bookings.filter((apt: any) => {
+          const aptDate = new Date(apt.date);
+          aptDate.setHours(0, 0, 0, 0);
+          return aptDate < today || apt.status === 'Tamamlandı' || apt.status === 'İptal';
+        }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
+        
+        setActiveAppointments(active);
+        setPastAppointments(past);
+        return;
+      }
       
-      // Aktif randevular (bugünden sonraki veya bugünkü, tamamlanmamış)
-      const active = bookings.filter((apt: any) => {
-        const aptDate = new Date(apt.date);
-        aptDate.setHours(0, 0, 0, 0);
-        return aptDate >= today && apt.status !== 'Tamamlandı' && apt.status !== 'İptal';
-      }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(0, 2);
-      
-      // Geçmiş randevular (bugünden önceki veya tamamlanmış)
-      const past = bookings.filter((apt: any) => {
-        const aptDate = new Date(apt.date);
-        aptDate.setHours(0, 0, 0, 0);
-        return aptDate < today || apt.status === 'Tamamlandı' || apt.status === 'İptal';
-      }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
-      
-      setActiveAppointments(active);
-      setPastAppointments(past);
+      // Guest mode ve email yoksa - boş liste
+      setActiveAppointments([]);
+      setPastAppointments([]);
     } catch (error) {
       console.error('Error loading appointments:', error);
-      // Fallback: AsyncStorage'dan yükle
-      try {
-        const appointmentsData = await AsyncStorage.getItem('appointments');
-        if (appointmentsData) {
-          const parsed = JSON.parse(appointmentsData);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          const active = parsed.filter((apt: any) => {
-            const aptDate = new Date(apt.date);
-            aptDate.setHours(0, 0, 0, 0);
-            return aptDate >= today && apt.status !== 'Tamamlandı' && apt.status !== 'İptal';
-          }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(0, 2);
-          
-          const past = parsed.filter((apt: any) => {
-            const aptDate = new Date(apt.date);
-            aptDate.setHours(0, 0, 0, 0);
-            return aptDate < today || apt.status === 'Tamamlandı' || apt.status === 'İptal';
-          }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
-          
-          setActiveAppointments(active);
-          setPastAppointments(past);
-        } else {
-          setActiveAppointments([]);
-          setPastAppointments([]);
-        }
-      } catch (fallbackError) {
-        console.error('Fallback error:', fallbackError);
-        setActiveAppointments([]);
-        setPastAppointments([]);
-      }
+      // Hata durumunda boş liste göster (giriş yapmış kullanıcılar için AsyncStorage fallback yok)
+      setActiveAppointments([]);
+      setPastAppointments([]);
     }
   };
 
@@ -1031,7 +1061,9 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>Favori Dükkan</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>4.8</Text>
+            <Text style={styles.statNumber}>
+              {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '0.0'}
+            </Text>
             <Text style={styles.statLabel}>Ortalama Puan</Text>
           </View>
         </View>

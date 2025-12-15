@@ -135,8 +135,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Kullanıcı giriş yapmışsa guest mode'u temizle
+      // Kullanıcı giriş yapmışsa guest mode'u temizle ve eski randevuları temizle
       AsyncStorage.removeItem('guestMode').catch(() => {
+        /* ignore */
+      });
+      // Yeni kullanıcı giriş yaptığında AsyncStorage'daki randevuları temizle
+      // (çünkü bunlar kullanıcıya özel değil, cihaza özel)
+      AsyncStorage.removeItem('appointments').catch(() => {
+        /* ignore */
+      });
+      AsyncStorage.removeItem('guestEmail').catch(() => {
         /* ignore */
       });
       setGuestModeState(false);
