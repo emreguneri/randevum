@@ -1248,8 +1248,8 @@ export default function Home() {
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:privacy@onlinerandevum.com" className="text-sm text-slate-300/70 hover:text-white transition-colors">
-                    privacy@onlinerandevum.com
+                  <a href="tel:+905392401111" className="text-sm text-slate-300/70 hover:text-white transition-colors">
+                    0539 240 11 11
                   </a>
                 </li>
               </ul>
