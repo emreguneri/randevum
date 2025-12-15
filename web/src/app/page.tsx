@@ -1,14 +1,92 @@
+"use client";
+
 import { BookingForm } from "@/components/booking-form";
 import { ContactForm } from "@/components/contact-form";
 import { ShopsShowcase } from "@/components/shops-showcase";
+import { db } from "@/lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-const stats = [
-  { value: "16.000+", label: "Aktif işletme" },
-  { value: "4.9 / 5", label: "Müşteri memnuniyeti" },
-  { value: "81", label: "İlde kullanım" },
-  { value: "7/24", label: "Bulut yedekleme" },
-];
+function StatsSection() {
+  const [stats, setStats] = useState({
+    activeShops: "0",
+    customerSatisfaction: "0.0",
+    cities: "81",
+    cloudBackup: "7/24",
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        // Aktif işletme sayısı
+        const shopsSnapshot = await getDocs(collection(db, "shops"));
+        const activeShopsCount = shopsSnapshot.size;
+        const activeShopsFormatted = activeShopsCount >= 1000 
+          ? `${(activeShopsCount / 1000).toFixed(1)}K+`
+          : activeShopsCount.toString();
+
+        // Müşteri memnuniyeti (ortalama puan)
+        const reviewsSnapshot = await getDocs(collection(db, "reviews"));
+        let averageRating = 0;
+        if (reviewsSnapshot.size > 0) {
+          const ratings = reviewsSnapshot.docs
+            .map((doc) => {
+              const data = doc.data();
+              return data.rating || 0;
+            })
+            .filter((rating) => rating > 0);
+          
+          if (ratings.length > 0) {
+            const sum = ratings.reduce((acc, rating) => acc + rating, 0);
+            averageRating = sum / ratings.length;
+          }
+        }
+        const customerSatisfactionFormatted = averageRating > 0 
+          ? `${averageRating.toFixed(1)} / 5`
+          : "0.0 / 5";
+
+        setStats({
+          activeShops: activeShopsFormatted,
+          customerSatisfaction: customerSatisfactionFormatted,
+          cities: "81", // Sabit değer
+          cloudBackup: "7/24", // Sabit değer
+        });
+      } catch (error) {
+        console.error("Error loading stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, []);
+
+  const statsItems = [
+    { value: stats.activeShops, label: "Aktif işletme" },
+    { value: stats.customerSatisfaction, label: "Müşteri memnuniyeti" },
+    { value: stats.cities, label: "İlde kullanım" },
+    { value: stats.cloudBackup, label: "Bulut yedekleme" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {statsItems.map((item) => (
+        <div
+          key={item.label}
+          className="rounded-2xl border border-white/10 px-4 py-5 text-center shadow-sm shadow-black/10"
+          style={{ backgroundColor: "#1a0a0a" }}
+        >
+          <p className="text-2xl font-semibold text-white">
+            {loading ? "..." : item.value}
+          </p>
+          <p className="mt-2 text-xs text-slate-200/70">{item.label}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const coreFeatures = [
   {
@@ -136,17 +214,7 @@ export default function Home() {
                   Özellikleri keşfet
                 </Link>
               </div>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {stats.map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-2xl border border-white/10 px-4 py-5 text-center shadow-sm shadow-black/10" style={{ backgroundColor: '#1a0a0a' }}
-                  >
-                    <p className="text-2xl font-semibold text-white">{item.value}</p>
-                    <p className="mt-2 text-xs text-slate-200/70">{item.label}</p>
-                  </div>
-                ))}
-              </div>
+              <StatsSection />
             </div>
           </div>
         </div>
