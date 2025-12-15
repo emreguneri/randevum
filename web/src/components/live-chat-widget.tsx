@@ -132,6 +132,7 @@ export function LiveChatWidget() {
           onClick={() => setIsOpen(true)}
           className="group flex items-center gap-3 rounded-full bg-gradient-to-br from-amber-900 to-slate-900 px-5 py-3 shadow-lg transition-all hover:scale-105 hover:shadow-xl"
           aria-label="Canlı destek"
+          style={{ marginBottom: '80px' }}
         >
           <div className="relative">
             <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
