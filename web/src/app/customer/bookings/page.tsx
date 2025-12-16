@@ -31,6 +31,7 @@ export default function CustomerBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Yönlendirme kontrolü - sadece bir kez çalışsın
   useEffect(() => {
     // Loading tamamlanana kadar bekle
     if (loading) return;
@@ -125,13 +126,41 @@ export default function CustomerBookingsPage() {
     });
   }, [bookings]);
 
-  // Loading durumunda veya user yüklenirken bekle
-  if (loading || !user) {
+  // Loading durumunda bekle
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
           <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-12 text-center backdrop-blur">
             <p className="text-slate-300">Yükleniyor...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading tamamlandı ama user yoksa login'e yönlendir (sadece render sırasında kontrol)
+  if (!user) {
+    // useEffect zaten yönlendirecek, burada sadece loading göster
+    return (
+      <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-12 text-center backdrop-blur">
+            <p className="text-slate-300">Yönlendiriliyor...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin kullanıcılar için dashboard'a yönlendir (render sırasında kontrol)
+  if (user.role === "admin") {
+    // useEffect zaten yönlendirecek, burada sadece loading göster
+    return (
+      <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-12 text-center backdrop-blur">
+            <p className="text-slate-300">Yönlendiriliyor...</p>
           </div>
         </div>
       </div>
