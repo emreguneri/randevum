@@ -59,7 +59,7 @@ export default function CustomerSettingsPage() {
 
   const handleUpdateProfile = async (e: FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || !user) return;
 
     try {
       setUpdating(true);
@@ -262,15 +262,15 @@ export default function CustomerSettingsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <span className="text-sm text-slate-300">Kullanıcı ID</span>
-              <span className="font-mono text-xs text-slate-400">{user.uid}</span>
+              <span className="font-mono text-xs text-slate-400">{user?.uid || "-"}</span>
             </div>
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <span className="text-sm text-slate-300">Hesap Tipi</span>
               <span className="text-sm font-medium text-white">
-                {user.role === "admin" ? "İşletme Sahibi" : "Müşteri"}
+                {user?.role === "admin" ? "İşletme Sahibi" : "Müşteri"}
               </span>
             </div>
-            {user.role === "admin" && (
+            {user?.role === "admin" && (
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <span className="text-sm text-slate-300">Abonelik Durumu</span>
                 <span
