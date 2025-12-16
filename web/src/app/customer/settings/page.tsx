@@ -10,6 +10,7 @@ import { FormEvent, useEffect, useState } from "react";
 export default function CustomerSettingsPage() {
   const { user, loading: authLoading, initialized, refreshProfile } = useAuth();
   const router = useRouter();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -19,6 +20,14 @@ export default function CustomerSettingsPage() {
 
   const [updating, setUpdating] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // User yoksa login'e yönlendir - sadece bir kez
+  useEffect(() => {
+    if (initialized && !user && !hasRedirected) {
+      setHasRedirected(true);
+      router.replace("/auth/login");
+    }
+  }, [initialized, user, router, hasRedirected]);
 
   // Loading durumunda veya henüz initialized olmadıysa bekle
   if (authLoading || !initialized) {

@@ -30,23 +30,26 @@ export default function CustomerBookingsPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
-  // Yönlendirme kontrolü - sadece initialized olduğunda ve bir kez
+  // Yönlendirme kontrolü - sadece bir kez çalışsın
   useEffect(() => {
-    if (!initialized) return;
+    if (!initialized || hasRedirected) return;
     
     // Admin kullanıcıları dashboard'a yönlendir
     if (user?.role === "admin") {
+      setHasRedirected(true);
       router.replace("/dashboard/bookings");
       return;
     }
     
     // User yoksa login'e yönlendir
     if (!user) {
+      setHasRedirected(true);
       router.replace("/auth/login");
       return;
     }
-  }, [initialized, user?.role, user, router]);
+  }, [initialized, user?.role, user, router, hasRedirected]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -136,7 +139,7 @@ export default function CustomerBookingsPage() {
   }
 
   // Admin kullanıcılar için dashboard'a yönlendir (useEffect'te yapılıyor)
-  if (initialized && user?.role === "admin") {
+  if (user?.role === "admin") {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
@@ -149,7 +152,7 @@ export default function CustomerBookingsPage() {
   }
 
   // User yoksa login'e yönlendir (useEffect'te yapılıyor)
-  if (initialized && !user) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
