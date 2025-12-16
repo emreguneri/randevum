@@ -139,9 +139,9 @@ export default function CustomerBookingsPage() {
     );
   }
 
-  // Loading tamamlandı ama user yoksa login'e yönlendir (sadece render sırasında kontrol)
+  // Loading tamamlandı ama user yoksa login'e yönlendir
+  // useEffect zaten yönlendirecek, burada sadece loading göster
   if (!user) {
-    // useEffect zaten yönlendirecek, burada sadece loading göster
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
@@ -153,9 +153,9 @@ export default function CustomerBookingsPage() {
     );
   }
 
-  // Admin kullanıcılar için dashboard'a yönlendir (render sırasında kontrol)
+  // Admin kullanıcılar için dashboard'a yönlendir
+  // useEffect zaten yönlendirecek, burada sadece loading göster
   if (user.role === "admin") {
-    // useEffect zaten yönlendirecek, burada sadece loading göster
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">

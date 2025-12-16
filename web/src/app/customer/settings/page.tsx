@@ -5,7 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { updateEmail, updatePassword, updateProfile } from "firebase/auth";
 import { doc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 export default function CustomerSettingsPage() {
   const { user, loading: authLoading, refreshProfile } = useAuth();
@@ -20,6 +20,18 @@ export default function CustomerSettingsPage() {
   const [updating, setUpdating] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
+  useEffect(() => {
+    // Loading tamamlanana kadar bekle
+    if (authLoading) return;
+    
+    // Loading tamamlandı ve user yoksa login'e yönlendir
+    if (!user) {
+      router.replace("/auth/login");
+      return;
+    }
+  }, [authLoading, user, router]);
+
+  // Loading durumunda bekle
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
@@ -30,9 +42,15 @@ export default function CustomerSettingsPage() {
     );
   }
 
+  // Loading tamamlandı ama user yoksa yönlendirme yapılacak (useEffect'te)
   if (!user) {
-    router.replace("/auth/login");
-    return null;
+    return (
+      <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-center py-20">
+          <p className="text-slate-300">Yönlendiriliyor...</p>
+        </div>
+      </div>
+    );
   }
 
   const handleUpdateProfile = async (e: FormEvent) => {

@@ -51,7 +51,19 @@ async function fetchUserRole(uid: string) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AppUser | null>(null);
+  // Initial state: Cookie'den user bilgisini oku (varsa)
+  const getInitialUser = (): AppUser | null => {
+    if (typeof document === "undefined") return null;
+    const cookies = document.cookie.split("; ");
+    const roleCookie = cookies.find((c) => c.startsWith("randevum_role="));
+    if (!roleCookie) return null;
+    
+    // Cookie'den sadece role bilgisi var, tam user bilgisi için onAuthStateChanged beklemeli
+    // Ama en azından loading state'ini daha iyi yönetebiliriz
+    return null;
+  };
+
+  const [user, setUser] = useState<AppUser | null>(getInitialUser());
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -94,6 +106,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // İlk yüklemede mevcut kullanıcıyı kontrol et
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      syncUser(currentUser);
+    } else {
+      setLoading(false);
+    }
+
+    // Auth state değişikliklerini dinle
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       syncUser(firebaseUser);
     });
