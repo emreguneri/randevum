@@ -26,8 +26,13 @@ export default function CustomerSettingsPage() {
     
     // Loading tamamlandı ve user yoksa login'e yönlendir
     if (!user) {
-      router.replace("/auth/login");
-      return;
+      // Küçük bir delay ekle - belki user henüz yükleniyor
+      const timer = setTimeout(() => {
+        if (!user) {
+          router.replace("/auth/login");
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [authLoading, user, router]);
 

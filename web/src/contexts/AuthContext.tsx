@@ -74,37 +74,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const roleData = await fetchUserRole(firebaseUser.uid);
+    try {
+      const roleData = await fetchUserRole(firebaseUser.uid);
 
-    setUser({
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: firebaseUser.displayName,
-      role: (roleData?.role as AppUser["role"]) ?? null,
-      subscriptionStatus: roleData?.subscriptionStatus,
-    });
-    setLoading(false);
-    persistSession({
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: firebaseUser.displayName,
-      role: (roleData?.role as AppUser["role"]) ?? null,
-      subscriptionStatus: roleData?.subscriptionStatus,
-    });
+      const appUser: AppUser = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        role: (roleData?.role as AppUser["role"]) ?? null,
+        subscriptionStatus: roleData?.subscriptionStatus,
+      };
+
+      setUser(appUser);
+      persistSession(appUser);
+    } catch (error) {
+      console.error("[AuthContext] Error syncing user:", error);
+      // Hata durumunda bile user bilgisini set et (role null olabilir)
+      const appUser: AppUser = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        role: null,
+        subscriptionStatus: undefined,
+      };
+      setUser(appUser);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    // İlk yüklemede mevcut kullanıcıyı kontrol et
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      syncUser(currentUser);
-    } else {
-      setLoading(false);
-    }
-
     // Auth state değişikliklerini dinle
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      syncUser(firebaseUser);
+    // onAuthStateChanged zaten mevcut kullanıcıyı da döndürür, ayrıca currentUser kontrolüne gerek yok
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      await syncUser(firebaseUser);
     });
     return () => unsub();
     // eslint-disable-next-line react-hooks/exhaustive-deps

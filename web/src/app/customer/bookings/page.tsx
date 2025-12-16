@@ -31,15 +31,20 @@ export default function CustomerBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Yönlendirme kontrolü - sadece bir kez çalışsın
+  // Yönlendirme kontrolü
   useEffect(() => {
     // Loading tamamlanana kadar bekle
     if (loading) return;
     
     // Loading tamamlandı ve user yoksa login'e yönlendir
     if (!user) {
-      router.replace("/auth/login");
-      return;
+      // Küçük bir delay ekle - belki user henüz yükleniyor
+      const timer = setTimeout(() => {
+        if (!user) {
+          router.replace("/auth/login");
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
     
     // Eğer role admin ise dashboard'a yönlendir
