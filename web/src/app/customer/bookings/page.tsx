@@ -26,36 +26,24 @@ const statusLabels: Record<Booking["status"], string> = {
 };
 
 export default function CustomerBookingsPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, initialized } = useAuth();
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Yönlendirme kontrolü
+  // Admin kullanıcıları dashboard'a yönlendir (sadece initialized olduğunda)
   useEffect(() => {
-    // Loading tamamlanana kadar bekle
-    if (loading) return;
-    
-    // Loading tamamlandı ve user yoksa login'e yönlendir
-    if (!user) {
-      // Küçük bir delay ekle - belki user henüz yükleniyor
-      const timer = setTimeout(() => {
-        if (!user) {
-          router.replace("/auth/login");
-        }
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-    
-    // Eğer role admin ise dashboard'a yönlendir
-    if (user.role === "admin") {
+    if (initialized && user?.role === "admin") {
       router.replace("/dashboard/bookings");
-      return;
     }
-    
-    // Role null ise (henüz yüklenmemiş) veya customer ise sayfayı göster
-    // Bu sayfa hem customer hem de role bilgisi yüklenmemiş kullanıcılar için
-  }, [loading, user, router]);
+  }, [initialized, user?.role, router]);
+
+  // User yoksa login'e yönlendir (sadece initialized olduğunda)
+  useEffect(() => {
+    if (initialized && !user) {
+      router.replace("/auth/login");
+    }
+  }, [initialized, user, router]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -131,8 +119,8 @@ export default function CustomerBookingsPage() {
     });
   }, [bookings]);
 
-  // Loading durumunda bekle
-  if (loading) {
+  // Loading durumunda veya henüz initialized olmadıysa bekle
+  if (loading || !initialized) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
@@ -144,8 +132,7 @@ export default function CustomerBookingsPage() {
     );
   }
 
-  // Loading tamamlandı ama user yoksa login'e yönlendir
-  // useEffect zaten yönlendirecek, burada sadece loading göster
+  // Loading tamamlandı ama user yoksa yönlendirme yapılacak (useEffect'te)
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
@@ -158,8 +145,7 @@ export default function CustomerBookingsPage() {
     );
   }
 
-  // Admin kullanıcılar için dashboard'a yönlendir
-  // useEffect zaten yönlendirecek, burada sadece loading göster
+  // Admin kullanıcılar için dashboard'a yönlendir (useEffect'te yapılıyor)
   if (user.role === "admin") {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">

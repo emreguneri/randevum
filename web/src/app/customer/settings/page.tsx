@@ -8,8 +8,15 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
 export default function CustomerSettingsPage() {
-  const { user, loading: authLoading, refreshProfile } = useAuth();
+  const { user, loading: authLoading, initialized, refreshProfile } = useAuth();
   const router = useRouter();
+
+  // User yoksa login'e yönlendir (sadece initialized olduğunda)
+  useEffect(() => {
+    if (initialized && !user) {
+      router.replace("/auth/login");
+    }
+  }, [initialized, user, router]);
 
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -20,24 +27,8 @@ export default function CustomerSettingsPage() {
   const [updating, setUpdating] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  useEffect(() => {
-    // Loading tamamlanana kadar bekle
-    if (authLoading) return;
-    
-    // Loading tamamlandı ve user yoksa login'e yönlendir
-    if (!user) {
-      // Küçük bir delay ekle - belki user henüz yükleniyor
-      const timer = setTimeout(() => {
-        if (!user) {
-          router.replace("/auth/login");
-        }
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [authLoading, user, router]);
-
-  // Loading durumunda bekle
-  if (authLoading) {
+  // Loading durumunda veya henüz initialized olmadıysa bekle
+  if (authLoading || !initialized) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-center py-20">

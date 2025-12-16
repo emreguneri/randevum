@@ -31,6 +31,7 @@ interface AppUser {
 interface AuthContextValue {
   user: AppUser | null;
   loading: boolean;
+  initialized: boolean; // Auth state'inin yüklenip yüklenmediğini gösterir
   login: (email: string, password: string) => Promise<void>;
   register: (params: {
     email: string;
@@ -53,6 +54,7 @@ async function fetchUserRole(uid: string) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const router = useRouter();
 
   const persistSession = (appUser: AppUser | null) => {
@@ -70,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!firebaseUser) {
       setUser(null);
       setLoading(false);
+      setInitialized(true);
       persistSession(null);
       return;
     }
@@ -100,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(appUser);
     } finally {
       setLoading(false);
+      setInitialized(true);
     }
   };
 
@@ -167,8 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, loading, login, register, logout, refreshProfile }),
-    [user, loading]
+    () => ({ user, loading, initialized, login, register, logout, refreshProfile }),
+    [user, loading, initialized]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
