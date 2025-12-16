@@ -32,19 +32,23 @@ export default function CustomerBookingsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.replace("/auth/login");
-        return;
-      }
-      // Eğer role admin ise dashboard'a yönlendir
-      if (user.role === "admin") {
-        router.replace("/dashboard/bookings");
-        return;
-      }
-      // Role null ise (henüz yüklenmemiş) veya customer ise sayfayı göster
-      // Bu sayfa hem customer hem de role bilgisi yüklenmemiş kullanıcılar için
+    // Loading tamamlanana kadar bekle
+    if (loading) return;
+    
+    // Loading tamamlandı ve user yoksa login'e yönlendir
+    if (!user) {
+      router.replace("/auth/login");
+      return;
     }
+    
+    // Eğer role admin ise dashboard'a yönlendir
+    if (user.role === "admin") {
+      router.replace("/dashboard/bookings");
+      return;
+    }
+    
+    // Role null ise (henüz yüklenmemiş) veya customer ise sayfayı göster
+    // Bu sayfa hem customer hem de role bilgisi yüklenmemiş kullanıcılar için
   }, [loading, user, router]);
 
   useEffect(() => {
@@ -120,6 +124,19 @@ export default function CustomerBookingsPage() {
       };
     });
   }, [bookings]);
+
+  // Loading durumunda veya user yüklenirken bekle
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-12 text-center backdrop-blur">
+            <p className="text-slate-300">Yükleniyor...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
