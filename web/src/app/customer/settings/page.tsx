@@ -11,13 +11,6 @@ export default function CustomerSettingsPage() {
   const { user, loading: authLoading, initialized, refreshProfile } = useAuth();
   const router = useRouter();
 
-  // User yoksa login'e yönlendir (sadece initialized olduğunda)
-  useEffect(() => {
-    if (initialized && !user) {
-      router.replace("/auth/login");
-    }
-  }, [initialized, user, router]);
-
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -38,8 +31,14 @@ export default function CustomerSettingsPage() {
     );
   }
 
-  // Loading tamamlandı ama user yoksa yönlendirme yapılacak (useEffect'te)
-  if (!user) {
+  // User yoksa login'e yönlendir (useEffect'te yapılıyor)
+  useEffect(() => {
+    if (initialized && !user) {
+      router.replace("/auth/login");
+    }
+  }, [initialized, user, router]);
+
+  if (initialized && !user) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-center py-20">

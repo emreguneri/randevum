@@ -108,8 +108,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // İlk yüklemede mevcut kullanıcıyı hemen kontrol et
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      syncUser(currentUser);
+    } else {
+      // Kullanıcı yoksa hemen initialized yap
+      setLoading(false);
+      setInitialized(true);
+    }
+
     // Auth state değişikliklerini dinle
-    // onAuthStateChanged zaten mevcut kullanıcıyı da döndürür, ayrıca currentUser kontrolüne gerek yok
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       await syncUser(firebaseUser);
     });

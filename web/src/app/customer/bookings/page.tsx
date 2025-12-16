@@ -31,19 +31,22 @@ export default function CustomerBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Admin kullanıcıları dashboard'a yönlendir (sadece initialized olduğunda)
+  // Yönlendirme kontrolü - sadece initialized olduğunda ve bir kez
   useEffect(() => {
-    if (initialized && user?.role === "admin") {
+    if (!initialized) return;
+    
+    // Admin kullanıcıları dashboard'a yönlendir
+    if (user?.role === "admin") {
       router.replace("/dashboard/bookings");
+      return;
     }
-  }, [initialized, user?.role, router]);
-
-  // User yoksa login'e yönlendir (sadece initialized olduğunda)
-  useEffect(() => {
-    if (initialized && !user) {
+    
+    // User yoksa login'e yönlendir
+    if (!user) {
       router.replace("/auth/login");
+      return;
     }
-  }, [initialized, user, router]);
+  }, [initialized, user?.role, user, router]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -132,8 +135,8 @@ export default function CustomerBookingsPage() {
     );
   }
 
-  // Loading tamamlandı ama user yoksa yönlendirme yapılacak (useEffect'te)
-  if (!user) {
+  // Admin kullanıcılar için dashboard'a yönlendir (useEffect'te yapılıyor)
+  if (initialized && user?.role === "admin") {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
@@ -145,8 +148,8 @@ export default function CustomerBookingsPage() {
     );
   }
 
-  // Admin kullanıcılar için dashboard'a yönlendir (useEffect'te yapılıyor)
-  if (user.role === "admin") {
+  // User yoksa login'e yönlendir (useEffect'te yapılıyor)
+  if (initialized && !user) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
