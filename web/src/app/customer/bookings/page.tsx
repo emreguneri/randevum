@@ -30,26 +30,33 @@ export default function CustomerBookingsPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasRedirected, setHasRedirected] = useState(false);
 
-  // Yönlendirme kontrolü - sadece bir kez çalışsın
+  console.log("[CustomerBookings] Render - user:", user?.uid, "loading:", loading, "initialized:", initialized);
+
+  // Yönlendirme kontrolü - sadece initialized olduğunda
   useEffect(() => {
-    if (!initialized || hasRedirected) return;
+    console.log("[CustomerBookings] useEffect - initialized:", initialized, "user:", user?.uid, "role:", user?.role);
+    if (!initialized) {
+      console.log("[CustomerBookings] Not initialized yet, waiting...");
+      return;
+    }
     
     // Admin kullanıcıları dashboard'a yönlendir
     if (user?.role === "admin") {
-      setHasRedirected(true);
+      console.log("[CustomerBookings] Admin user, redirecting to dashboard");
       router.replace("/dashboard/bookings");
       return;
     }
     
     // User yoksa login'e yönlendir
     if (!user) {
-      setHasRedirected(true);
+      console.log("[CustomerBookings] No user, redirecting to login");
       router.replace("/auth/login");
       return;
     }
-  }, [initialized, user?.role, user, router, hasRedirected]);
+    
+    console.log("[CustomerBookings] User exists, showing page");
+  }, [initialized, user?.role, user, router]);
 
   useEffect(() => {
     if (!user?.uid) return;

@@ -69,7 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const syncUser = async (firebaseUser: User | null) => {
+    console.log("[AuthContext] syncUser called with:", firebaseUser?.uid || "null");
     if (!firebaseUser) {
+      console.log("[AuthContext] No firebaseUser, setting user to null");
       setUser(null);
       setLoading(false);
       setInitialized(true);
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const roleData = await fetchUserRole(firebaseUser.uid);
+      console.log("[AuthContext] Role data fetched:", roleData);
 
       const appUser: AppUser = {
         uid: firebaseUser.uid,
@@ -88,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         subscriptionStatus: roleData?.subscriptionStatus,
       };
 
+      console.log("[AuthContext] Setting user:", appUser);
       setUser(appUser);
       persistSession(appUser);
     } catch (error) {
@@ -102,24 +106,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       setUser(appUser);
     } finally {
+      console.log("[AuthContext] Setting loading=false, initialized=true");
       setLoading(false);
       setInitialized(true);
     }
   };
 
   useEffect(() => {
-    // İlk yüklemede mevcut kullanıcıyı hemen kontrol et
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      syncUser(currentUser);
-    } else {
-      // Kullanıcı yoksa hemen initialized yap
-      setLoading(false);
-      setInitialized(true);
-    }
-
+    console.log("[AuthContext] useEffect - Setting up auth listener");
+    
     // Auth state değişikliklerini dinle
+    // onAuthStateChanged zaten mevcut kullanıcıyı da döndürür, ayrıca currentUser kontrolüne gerek yok
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("[AuthContext] onAuthStateChanged triggered, user:", firebaseUser?.uid || "null");
       await syncUser(firebaseUser);
     });
     return () => unsub();
