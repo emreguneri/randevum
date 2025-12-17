@@ -92,6 +92,23 @@ export function Navbar() {
                   : "invisible -translate-y-2 opacity-0 scale-95 pointer-events-none"
               }`}
             >
+              {/* Profil Özeti */}
+              <div className="mb-3 border-b border-white/10 pb-3">
+                <Link
+                  href="/profile"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2"
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 text-sm font-bold text-white">
+                    {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">{user.displayName || "Kullanıcı"}</p>
+                    <p className="text-xs text-slate-400">Profilimi Görüntüle</p>
+                  </div>
+                </Link>
+              </div>
+
               {/* Müşteri Menüsü - Her zaman görünür */}
               <div className="mb-2">
                 <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
