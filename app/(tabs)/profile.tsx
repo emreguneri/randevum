@@ -349,25 +349,69 @@ export default function ProfileScreen() {
   const loadSubscriptionInfo = async () => {
     try {
       if (user?.uid) {
+        // Önce users koleksiyonundan kontrol et
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          const subscriptionEndRaw = userData.subscriptionEndsAt;
-          const subscriptionEndDate =
-            typeof subscriptionEndRaw === 'string'
-              ? subscriptionEndRaw
-              : subscriptionEndRaw?.toDate
-              ? subscriptionEndRaw.toDate().toISOString()
-              : null;
-          if (userData.subscriptionStatus === 'active' && subscriptionEndDate) {
-            const endDate = new Date(subscriptionEndDate);
-            const today = new Date();
-            const diffTime = endDate.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          console.log('[Profile] User data for subscription:', userData);
+          
+          // Eğer subscriptionStatus active ise
+          if (userData.subscriptionStatus === 'active') {
+            // subscriptions koleksiyonundan detaylı bilgi al
+            const subscriptionsQuery = query(
+              collection(db, 'subscriptions'),
+              where('userId', '==', user.uid)
+            );
+            const subscriptionsSnap = await getDocs(subscriptionsQuery);
+            
+            if (!subscriptionsSnap.empty) {
+              const subData = subscriptionsSnap.docs[0].data();
+              console.log('[Profile] Subscription data:', subData);
+              
+              const endDateRaw = subData.endDate;
+              let endDate: Date | null = null;
+              
+              if (endDateRaw?.toDate) {
+                endDate = endDateRaw.toDate();
+              } else if (typeof endDateRaw === 'string') {
+                endDate = new Date(endDateRaw);
+              }
+              
+              if (endDate) {
+                const today = new Date();
+                const diffTime = endDate.getTime() - today.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                setSubscriptionInfo({
+                  paymentStatus: 'active',
+                  daysRemaining: diffDays > 0 ? diffDays : 0,
+                  subscriptionEndDate: endDate.toLocaleDateString('tr-TR'),
+                });
+                return;
+              }
+            }
+            
+            // subscriptions koleksiyonunda bulunamadıysa users'dan al
+            const subscriptionEndRaw = userData.subscriptionEndsAt;
+            if (subscriptionEndRaw) {
+              const endDate = subscriptionEndRaw?.toDate ? subscriptionEndRaw.toDate() : new Date(subscriptionEndRaw);
+              const today = new Date();
+              const diffTime = endDate.getTime() - today.getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              
+              setSubscriptionInfo({
+                paymentStatus: 'active',
+                daysRemaining: diffDays > 0 ? diffDays : 0,
+                subscriptionEndDate: endDate.toLocaleDateString('tr-TR'),
+              });
+              return;
+            }
+            
+            // Tarih bilgisi yoksa sadece active göster
             setSubscriptionInfo({
               paymentStatus: 'active',
-              daysRemaining: diffDays > 0 ? diffDays : 0,
-              subscriptionEndDate,
+              daysRemaining: null,
+              subscriptionEndDate: null,
             });
             return;
           }
@@ -385,7 +429,7 @@ export default function ProfileScreen() {
           setSubscriptionInfo({
             paymentStatus: 'active',
             daysRemaining: diffDays > 0 ? diffDays : 0,
-            subscriptionEndDate: parsed.subscriptionEndDate,
+            subscriptionEndDate: endDate.toLocaleDateString('tr-TR'),
           });
           return;
         }
@@ -1083,16 +1127,153 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* Mekan Ekle Butonu - İşletme Sahibi için (Sadece ödeme yapılmışsa) */}
-      {userType === 'admin' && subscriptionInfo?.paymentStatus === 'active' && (
+      {/* İşletme Sahibi - Abonelik Bilgileri */}
+      {userType === 'admin' && !guestMode && (
+        <View style={styles.subscriptionCard}>
+          <View style={styles.subscriptionHeader}>
+            <IconSymbol name="crown.fill" size={20} color="#f59e0b" />
+            <Text style={styles.subscriptionTitle}>Abonelik Durumu</Text>
+          </View>
+          
+          <View style={styles.subscriptionContent}>
+            <View style={styles.subscriptionRow}>
+              <Text style={styles.subscriptionLabel}>Durum:</Text>
+              <View style={[
+                styles.subscriptionBadge,
+                { backgroundColor: subscriptionInfo?.paymentStatus === 'active' ? '#10b98120' : '#ef444420' }
+              ]}>
+                <Text style={[
+                  styles.subscriptionBadgeText,
+                  { color: subscriptionInfo?.paymentStatus === 'active' ? '#10b981' : '#ef4444' }
+                ]}>
+                  {subscriptionInfo?.paymentStatus === 'active' ? 'Aktif' : 'Pasif'}
+                </Text>
+              </View>
+            </View>
+            
+            {subscriptionInfo?.paymentStatus === 'active' && (
+              <>
+                <View style={styles.subscriptionRow}>
+                  <Text style={styles.subscriptionLabel}>Kalan Gün:</Text>
+                  <Text style={[
+                    styles.subscriptionValue,
+                    { color: (subscriptionInfo?.daysRemaining || 0) <= 7 ? '#f59e0b' : '#10b981' }
+                  ]}>
+                    {subscriptionInfo?.daysRemaining || 0} gün
+                  </Text>
+                </View>
+                {subscriptionInfo?.subscriptionEndDate && (
+                  <View style={styles.subscriptionRow}>
+                    <Text style={styles.subscriptionLabel}>Bitiş Tarihi:</Text>
+                    <Text style={styles.subscriptionValue}>
+                      {subscriptionInfo.subscriptionEndDate}
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+
+          {subscriptionInfo?.paymentStatus !== 'active' && (
+            <TouchableOpacity 
+              style={styles.subscriptionButton}
+              onPress={() => router.push('/payment')}
+            >
+              <IconSymbol name="creditcard.fill" size={16} color="#fff" />
+              <Text style={styles.subscriptionButtonText}>Abonelik Satın Al</Text>
+            </TouchableOpacity>
+          )}
+          
+          {subscriptionInfo?.paymentStatus === 'active' && (
+            <TouchableOpacity 
+              style={[styles.subscriptionButton, { backgroundColor: '#64748b' }]}
+              onPress={() => router.push('/settings/subscription')}
+            >
+              <IconSymbol name="gearshape.fill" size={16} color="#fff" />
+              <Text style={styles.subscriptionButtonText}>Abonelik Ayarları</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* İşletme Yönetimi - İşletme Sahibi için */}
+      {userType === 'admin' && !guestMode && (
         <View style={styles.section}>
-          <TouchableOpacity 
-            style={styles.addShopButton}
-            onPress={handleAddShop}
-          >
-            <IconSymbol name="plus.circle.fill" size={24} color="#fff" />
-            <Text style={styles.addShopButtonText}>Mekan Ekle</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>İşletme Yönetimi</Text>
+          
+          {subscriptionInfo?.paymentStatus === 'active' ? (
+            <View style={styles.businessMenuContainer}>
+              <TouchableOpacity 
+                style={styles.businessMenuItem}
+                onPress={handleAddShop}
+              >
+                <View style={[styles.businessMenuIcon, { backgroundColor: '#dc262620' }]}>
+                  <IconSymbol name="plus.circle.fill" size={24} color="#dc2626" />
+                </View>
+                <View style={styles.businessMenuContent}>
+                  <Text style={styles.businessMenuTitle}>Mekan Ekle / Düzenle</Text>
+                  <Text style={styles.businessMenuSubtitle}>İşletme bilgilerinizi yönetin</Text>
+                </View>
+                <IconSymbol name="chevron.right" size={16} color="#94a3b8" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.businessMenuItem}
+                onPress={() => router.push('/admin/appointments')}
+              >
+                <View style={[styles.businessMenuIcon, { backgroundColor: '#3b82f620' }]}>
+                  <IconSymbol name="calendar.badge.clock" size={24} color="#3b82f6" />
+                </View>
+                <View style={styles.businessMenuContent}>
+                  <Text style={styles.businessMenuTitle}>Randevu Yönetimi</Text>
+                  <Text style={styles.businessMenuSubtitle}>Gelen randevuları yönetin</Text>
+                </View>
+                <IconSymbol name="chevron.right" size={16} color="#94a3b8" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.businessMenuItem}
+                onPress={() => router.push('/admin/revenue')}
+              >
+                <View style={[styles.businessMenuIcon, { backgroundColor: '#10b98120' }]}>
+                  <IconSymbol name="chart.bar.fill" size={24} color="#10b981" />
+                </View>
+                <View style={styles.businessMenuContent}>
+                  <Text style={styles.businessMenuTitle}>Gelir & İstatistikler</Text>
+                  <Text style={styles.businessMenuSubtitle}>Finansal raporlarınız</Text>
+                </View>
+                <IconSymbol name="chevron.right" size={16} color="#94a3b8" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.businessMenuItem}
+                onPress={() => router.push('/admin/staff')}
+              >
+                <View style={[styles.businessMenuIcon, { backgroundColor: '#8b5cf620' }]}>
+                  <IconSymbol name="person.2.fill" size={24} color="#8b5cf6" />
+                </View>
+                <View style={styles.businessMenuContent}>
+                  <Text style={styles.businessMenuTitle}>Personel Yönetimi</Text>
+                  <Text style={styles.businessMenuSubtitle}>Çalışanlarınızı yönetin</Text>
+                </View>
+                <IconSymbol name="chevron.right" size={16} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.subscriptionRequiredCard}>
+              <IconSymbol name="lock.fill" size={32} color="#94a3b8" />
+              <Text style={styles.subscriptionRequiredTitle}>Abonelik Gerekli</Text>
+              <Text style={styles.subscriptionRequiredText}>
+                İşletme özelliklerini kullanmak için abonelik satın alın
+              </Text>
+              <TouchableOpacity 
+                style={styles.subscriptionRequiredButton}
+                onPress={() => router.push('/payment')}
+              >
+                <Text style={styles.subscriptionRequiredButtonText}>Abonelik Satın Al</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
@@ -2010,6 +2191,146 @@ const styles = StyleSheet.create({
   },
   calendarActionButtonText: {
     fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  // Subscription Card Styles
+  subscriptionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  subscriptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  subscriptionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  subscriptionContent: {
+    marginBottom: 16,
+  },
+  subscriptionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  subscriptionLabel: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  subscriptionValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  subscriptionBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  subscriptionBadgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  subscriptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#dc2626',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  subscriptionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  // Business Menu Styles
+  businessMenuContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    overflow: 'hidden',
+  },
+  businessMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  businessMenuIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  businessMenuContent: {
+    flex: 1,
+  },
+  businessMenuTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 2,
+  },
+  businessMenuSubtitle: {
+    fontSize: 13,
+    color: '#64748b',
+  },
+  // Subscription Required Card
+  subscriptionRequiredCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed',
+  },
+  subscriptionRequiredTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  subscriptionRequiredText: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  subscriptionRequiredButton: {
+    backgroundColor: '#dc2626',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+  },
+  subscriptionRequiredButtonText: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff',
   },
