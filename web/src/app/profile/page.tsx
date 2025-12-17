@@ -61,13 +61,17 @@ export default function ProfilePage() {
 
         // Firestore'dan subscription bilgilerini al
         if (user.role === "admin") {
+          console.log("[Profile] Fetching subscription for userId:", user.uid);
           const subQuery = query(
             collection(db, "subscriptions"),
             where("userId", "==", user.uid)
           );
           const subSnap = await getDocs(subQuery);
+          console.log("[Profile] Subscription query result:", subSnap.empty ? "empty" : subSnap.docs.length + " docs");
+          
           if (!subSnap.empty) {
             const subData = subSnap.docs[0].data();
+            console.log("[Profile] Subscription data:", subData);
             subInfo.startDate = subData.startDate?.toDate() || null;
             subInfo.endDate = subData.endDate?.toDate() || null;
             subInfo.planName = subData.planName || "Pro Plan";
@@ -76,6 +80,7 @@ export default function ProfilePage() {
               const now = new Date();
               const diffTime = subInfo.endDate.getTime() - now.getTime();
               subInfo.daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+              console.log("[Profile] Days remaining calculated:", subInfo.daysRemaining);
               
               if (subInfo.daysRemaining === 0 && user.subscriptionStatus === "active") {
                 subInfo.status = "expired";
