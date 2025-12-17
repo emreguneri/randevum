@@ -230,8 +230,8 @@ export default function ProfileScreen() {
       
       // Kullanıcı giriş yapmışsa ve profile yüklenmişse, önce role kontrolü yap
       if (user && profile) {
-        // Eğer profile'da admin role'ü varsa, direkt admin moduna geç
-        if (profile.role === 'admin') {
+        // İşletme sahibi olmak için: role === 'admin' VE subscriptionStatus === 'active'
+        if (profile.role === 'admin' && profile.subscriptionStatus === 'active') {
           setUserType('admin');
           AsyncStorage.setItem('selectedUserType', 'admin').catch(() => {});
           // Admin ise diğer işlemleri yap
@@ -242,7 +242,7 @@ export default function ProfileScreen() {
         }
       }
       
-      // Profile henüz yüklenmemişse veya admin değilse, normal akışı takip et
+      // Profile henüz yüklenmemişse veya aktif abonelik yoksa, normal akışı takip et
       loadUserTypePreference();
       loadSubscriptionInfo();
       loadShopInfo();
@@ -254,28 +254,15 @@ export default function ProfileScreen() {
   // Kullanıcının seçimini AsyncStorage'dan yükle
   const loadUserTypePreference = async () => {
     try {
-      // Önce profile'dan role kontrolü yap (en güncel bilgi)
-      if (profile?.role === 'admin') {
+      // İşletme sahibi olmak için: role === 'admin' VE subscriptionStatus === 'active'
+      // Sadece aktif aboneliği olanlar admin olarak görünür
+      if (profile?.role === 'admin' && profile?.subscriptionStatus === 'active') {
         setUserType('admin');
         await AsyncStorage.setItem('selectedUserType', 'admin');
         return;
       }
-
-      // Önce kullanıcının manuel seçimini kontrol et
-      const savedUserType = await AsyncStorage.getItem('selectedUserType');
-      if (savedUserType === 'customer' || savedUserType === 'admin') {
-        // Kullanıcının manuel seçimi varsa, onu kullan
-        // Ama eğer profile'da admin role'ü varsa, onu önceliklendir
-        if (profile?.role === 'admin') {
-          setUserType('admin');
-          await AsyncStorage.setItem('selectedUserType', 'admin');
-        } else {
-          setUserType(savedUserType);
-        }
-        return;
-      }
       
-      // Eğer manuel seçim yoksa, otomatik kontrol yap
+      // Eğer aktif abonelik yoksa, otomatik kontrol yap
       await checkUserType();
     } catch (error) {
       console.error('Error loading user type preference:', error);
@@ -286,15 +273,23 @@ export default function ProfileScreen() {
 
   const checkUserType = async () => {
     try {
-      // Önce kullanıcının profile'ını kontrol et (AuthContext'ten)
-      if (profile?.role === 'admin') {
-        // Kullanıcı admin role'üne sahipse direkt admin moduna geç
-        setUserType('admin');
-        await AsyncStorage.setItem('selectedUserType', 'admin');
-        return;
+      // İşletme sahibi olmak için: role === 'admin' VE subscriptionStatus === 'active'
+      
+      // Önce Firestore'dan kontrol et
+      if (user?.uid) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          // Sadece aktif aboneliği olanlar işletme sahibi olarak görünür
+          if (userData.role === 'admin' && userData.subscriptionStatus === 'active') {
+            setUserType('admin');
+            await AsyncStorage.setItem('selectedUserType', 'admin');
+            return;
+          }
+        }
       }
 
-      // Önce businessOwner kontrolü yap (ödeme yapılmış işletme sahipleri)
+      // AsyncStorage'dan businessOwner kontrolü yap (ödeme yapılmış işletme sahipleri)
       const businessOwner = await AsyncStorage.getItem('businessOwner');
       if (businessOwner) {
         const parsed = JSON.parse(businessOwner);
@@ -305,38 +300,7 @@ export default function ProfileScreen() {
         }
       }
       
-      if (user?.uid) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          // Eğer role admin ise, ödeme durumuna bakmadan admin moduna geç
-          if (userData.role === 'admin') {
-            setUserType('admin');
-            await AsyncStorage.setItem('selectedUserType', 'admin');
-            return;
-          }
-        }
-      }
-      
-      // shopInfo varsa işletme sahibi, yoksa müşteri
-      const shopInfo = await AsyncStorage.getItem('shopInfo');
-      if (shopInfo) {
-        const parsed = JSON.parse(shopInfo);
-        if (parsed.name) {
-          // Shop info varsa ve kullanıcı admin role'üne sahipse admin moduna geç
-          if (user?.uid) {
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              if (userData.role === 'admin') {
-                setUserType('admin');
-                await AsyncStorage.setItem('selectedUserType', 'admin');
-                return;
-              }
-            }
-          }
-        }
-      }
+      // Aktif abonelik yoksa müşteri olarak göster
       setUserType('customer');
       await AsyncStorage.setItem('selectedUserType', 'customer');
     } catch (error) {
@@ -538,14 +502,16 @@ export default function ProfileScreen() {
       }
     }
 
-    // Kullanıcı zaten admin role'üne sahipse, direkt admin moduna geç
-    if (isAdmin || profile?.role === 'admin') {
-      console.log('[Profile] User is admin, switching to admin mode');
+    // Sadece aktif aboneliği olanlar işletme sahibi moduna geçebilir
+    // Role admin olsa bile subscription active olmalı
+    if (hasActiveSubscription) {
+      console.log('[Profile] User has active subscription, switching to admin mode');
       setUserType('admin');
       await AsyncStorage.setItem('selectedUserType', 'admin');
       return;
     }
 
+    // AsyncStorage'dan da kontrol et
     if (!hasActiveSubscription) {
       const businessOwner = await AsyncStorage.getItem('businessOwner');
       if (businessOwner) {
