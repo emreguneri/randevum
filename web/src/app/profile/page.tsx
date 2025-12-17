@@ -243,13 +243,21 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Link
                 href="/customer/settings"
                 className="rounded-xl border border-white/20 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
               >
                 ⚙️ Hesap Ayarları
               </Link>
+              {!isAdmin && (
+                <Link
+                  href="/auth/upgrade-to-business"
+                  className="rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                >
+                  🏪 İşletme Sahibi Ol
+                </Link>
+              )}
               {isAdmin && user.subscriptionStatus !== "active" && (
                 <Link
                   href="/payment"
