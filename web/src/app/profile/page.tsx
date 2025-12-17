@@ -253,7 +253,7 @@ export default function ProfilePage() {
               </Link>
               {!isAdmin && (
                 <Link
-                  href="/auth/upgrade-to-business"
+                  href="/payment?upgrade=true"
                   className="rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
                 >
                   🏪 İşletme Sahibi Ol
