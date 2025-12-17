@@ -112,47 +112,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!isMounted) return;
       
-      // Guest mode kontrolü - eğer guest mode aktifse user'ı set etme
-      const currentGuestMode = await AsyncStorage.getItem('guestMode');
-      if (currentGuestMode === 'true') {
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-
-      setUser(firebaseUser);
-
-      if (!firebaseUser) {
-        setProfile(null);
-        // Kullanıcı giriş yapmamışsa ve guest mode da yoksa, otomatik guest mode aktif et
-        const savedGuestMode = await AsyncStorage.getItem('guestMode');
-        if (savedGuestMode !== 'true') {
-          await AsyncStorage.setItem('guestMode', 'true');
-          setGuestModeState(true);
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Kullanıcı giriş yapmışsa guest mode'u temizle ve eski randevuları temizle
-      AsyncStorage.removeItem('guestMode').catch(() => {
-        /* ignore */
-      });
-      // Yeni kullanıcı giriş yaptığında AsyncStorage'daki randevuları temizle
-      // (çünkü bunlar kullanıcıya özel değil, cihaza özel)
-      AsyncStorage.removeItem('appointments').catch(() => {
-        /* ignore */
-      });
-      AsyncStorage.removeItem('guestEmail').catch(() => {
-        /* ignore */
-      });
-      setGuestModeState(false);
-      loadUserProfile(firebaseUser).finally(() => {
+      console.log('[AuthContext] onAuthStateChanged triggered, user:', firebaseUser?.uid || 'null');
+      
+      // Eğer kullanıcı giriş yapmışsa, guest mode'u hemen temizle
+      if (firebaseUser) {
+        console.log('[AuthContext] User logged in, clearing guest mode');
+        await AsyncStorage.removeItem('guestMode');
+        setGuestModeState(false);
+        setUser(firebaseUser);
+        
+        // Yeni kullanıcı giriş yaptığında AsyncStorage'daki randevuları temizle
+        AsyncStorage.removeItem('appointments').catch(() => {});
+        AsyncStorage.removeItem('guestEmail').catch(() => {});
+        
+        // Profili yükle
+        await loadUserProfile(firebaseUser);
         if (isMounted) {
           setLoading(false);
         }
-      });
+        return;
+      }
+      
+      // Kullanıcı giriş yapmamış
+      setUser(null);
+      setProfile(null);
+      
+      // Guest mode kontrolü
+      const currentGuestMode = await AsyncStorage.getItem('guestMode');
+      if (currentGuestMode !== 'true') {
+        // Otomatik guest mode aktif et
+        await AsyncStorage.setItem('guestMode', 'true');
+        setGuestModeState(true);
+      }
+      setLoading(false);
     });
 
     return () => {

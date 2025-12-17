@@ -468,24 +468,38 @@ export default function ProfileScreen() {
       return;
     }
 
-    // Kullanıcı zaten admin role'üne sahipse, direkt admin moduna geç
-    if (profile?.role === 'admin') {
-      setUserType('admin');
-      await AsyncStorage.setItem('selectedUserType', 'admin');
-      return;
-    }
-
-    // Kullanıcı admin değilse, ödeme kontrolü yap
+    // Önce Firestore'dan güncel kullanıcı bilgisini al
+    let isAdmin = false;
     let hasActiveSubscription = false;
 
     if (user?.uid) {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        if (userData.subscriptionStatus === 'active') {
-          hasActiveSubscription = true;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          console.log('[Profile] User data from Firestore:', userData);
+          
+          // Role kontrolü
+          if (userData.role === 'admin') {
+            isAdmin = true;
+          }
+          
+          // Subscription kontrolü
+          if (userData.subscriptionStatus === 'active') {
+            hasActiveSubscription = true;
+          }
         }
+      } catch (error) {
+        console.error('[Profile] Error fetching user data:', error);
       }
+    }
+
+    // Kullanıcı zaten admin role'üne sahipse, direkt admin moduna geç
+    if (isAdmin || profile?.role === 'admin') {
+      console.log('[Profile] User is admin, switching to admin mode');
+      setUserType('admin');
+      await AsyncStorage.setItem('selectedUserType', 'admin');
+      return;
     }
 
     if (!hasActiveSubscription) {
