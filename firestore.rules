@@ -128,6 +128,26 @@ service cloud.firestore {
     }
     
     // ============================================
+    // SUBSCRIPTIONS Collection
+    // ============================================
+    match /subscriptions/{subscriptionId} {
+      // Kullanıcılar sadece kendi abonelik bilgilerini okuyabilir
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Abonelik oluşturma ve güncelleme sadece backend/admin tarafından yapılmalı
+      // Şimdilik authenticated kullanıcılar kendi aboneliklerini oluşturabilir (test için)
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Güncelleme yasak (sadece backend yapmalı)
+      allow update: if false;
+      
+      // Silme yasak
+      allow delete: if false;
+    }
+    
+    // ============================================
     // REVIEWS Collection
     // ============================================
     match /reviews/{reviewId} {
