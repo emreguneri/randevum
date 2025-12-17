@@ -1,18 +1,13 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export default function UpgradeToBusinessPage() {
-  const { user, loading, initialized, refreshProfile } = useAuth();
+  const { user, loading, initialized } = useAuth();
   const router = useRouter();
-  const [isUpgrading, setIsUpgrading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   // Yönlendirme kontrolü
   useEffect(() => {
@@ -28,32 +23,8 @@ export default function UpgradeToBusinessPage() {
   const handleUpgrade = async () => {
     if (!user?.uid) return;
 
-    setIsUpgrading(true);
-    setError(null);
-
-    try {
-      // Firestore'da kullanıcının rolünü güncelle
-      await updateDoc(doc(db, "users", user.uid), {
-        role: "admin",
-        subscriptionStatus: "inactive",
-        upgradedAt: new Date(),
-      });
-
-      // Profili yenile
-      await refreshProfile();
-      
-      setSuccess(true);
-      
-      // 2 saniye sonra profile yönlendir
-      setTimeout(() => {
-        router.replace("/profile");
-      }, 2000);
-    } catch (err: any) {
-      console.error("[UpgradeToBusiness] Error:", err);
-      setError(err.message || "Bir hata oluştu. Lütfen tekrar deneyin.");
-    } finally {
-      setIsUpgrading(false);
-    }
+    // Ödeme sayfasına yönlendir
+    router.push("/payment?upgrade=true");
   };
 
   // Loading durumunda bekle
@@ -103,27 +74,8 @@ export default function UpgradeToBusinessPage() {
           </p>
         </div>
 
-        {/* Success Message */}
-        {success && (
-          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center">
-            <p className="text-lg font-medium text-emerald-300">
-              ✅ Tebrikler! Artık işletme sahibisiniz.
-            </p>
-            <p className="mt-2 text-sm text-emerald-200/70">
-              Profil sayfasına yönlendiriliyorsunuz...
-            </p>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
-            <p className="text-sm text-red-300">{error}</p>
-          </div>
-        )}
-
         {/* Benefits */}
-        {!success && (
+        {(
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur">
             <h2 className="mb-6 text-xl font-semibold text-white">
               İşletme Sahibi Olarak Neler Yapabilirsiniz?
@@ -174,7 +126,7 @@ export default function UpgradeToBusinessPage() {
         )}
 
         {/* Pricing Info */}
-        {!success && (
+        {(
           <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-8 backdrop-blur">
             <div className="text-center">
               <p className="text-sm text-purple-300">İşletme sahibi olduktan sonra</p>
@@ -189,27 +141,24 @@ export default function UpgradeToBusinessPage() {
         )}
 
         {/* Action Buttons */}
-        {!success && (
-          <div className="space-y-4">
-            <button
-              onClick={handleUpgrade}
-              disabled={isUpgrading}
-              className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4 text-lg font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isUpgrading ? "İşleniyor..." : "🚀 İşletme Sahibi Ol"}
-            </button>
+        <div className="space-y-4">
+          <button
+            onClick={handleUpgrade}
+            className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4 text-lg font-semibold text-white transition hover:opacity-90"
+          >
+            🚀 Abonelik Satın Al ve İşletme Sahibi Ol
+          </button>
             
-            <Link
-              href="/profile"
-              className="block w-full rounded-xl border border-white/20 px-6 py-4 text-center text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              ← Geri Dön
-            </Link>
-          </div>
-        )}
+          <Link
+            href="/profile"
+            className="block w-full rounded-xl border border-white/20 px-6 py-4 text-center text-sm font-medium text-white transition hover:bg-white/10"
+          >
+            ← Geri Dön
+          </Link>
+        </div>
 
         {/* Terms */}
-        {!success && (
+        {(
           <p className="text-center text-xs text-slate-500">
             İşletme sahibi olarak{" "}
             <Link href="/terms" className="text-fuchsia-400 hover:underline">

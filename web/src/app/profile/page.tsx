@@ -206,7 +206,8 @@ export default function ProfilePage() {
     );
   }
 
-  const isAdmin = user.role === "admin";
+  // İşletme sahibi: role === admin VE subscriptionStatus === active
+  const isAdmin = user.role === "admin" && user.subscriptionStatus === "active";
 
   return (
     <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
