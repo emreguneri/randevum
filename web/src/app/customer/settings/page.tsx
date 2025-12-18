@@ -31,20 +31,31 @@ export default function CustomerSettingsPage() {
   useEffect(() => {
     // Henüz yükleniyorsa bekle
     if (authLoading || !initialized) {
+      console.log("[CustomerSettings] Waiting for auth to initialize...", { authLoading, initialized });
       return;
     }
     
+    console.log("[CustomerSettings] Auth initialized, checking user:", { 
+      hasUser: !!user, 
+      isAdmin,
+      role: user?.role 
+    });
+    
     // Admin kullanıcıları dashboard'a yönlendir
     if (isAdmin) {
+      console.log("[CustomerSettings] Admin user, redirecting to dashboard");
       router.replace("/dashboard/shop");
       return;
     }
     
     // User yoksa login'e yönlendir
     if (!user && !hasRedirected) {
+      console.log("[CustomerSettings] No user, redirecting to login");
       setHasRedirected(true);
       router.replace("/auth/login");
     }
+    
+    console.log("[CustomerSettings] User exists, showing page");
   }, [authLoading, initialized, isAdmin, user, router, hasRedirected]);
 
   // Loading durumunda veya henüz initialized olmadıysa bekle
