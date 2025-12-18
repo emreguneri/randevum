@@ -29,7 +29,7 @@ export default function CustomerSettingsPage() {
     }
     
     // Admin kullanıcıları dashboard'a yönlendir
-    if (user?.role === "admin") {
+    if (user && (user.role as "admin" | "customer" | null) === "admin") {
       router.replace("/dashboard/shop");
       return;
     }
@@ -53,7 +53,7 @@ export default function CustomerSettingsPage() {
   }
 
   // Yönlendirme yapılıyorsa loading göster (useEffect'te yapılıyor)
-  if (!user || user?.role === "admin") {
+  if (!user || (user.role as "admin" | "customer" | null) === "admin") {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-center py-20">
@@ -273,10 +273,10 @@ export default function CustomerSettingsPage() {
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <span className="text-sm text-slate-300">Hesap Tipi</span>
               <span className="text-sm font-medium text-white">
-                {user && user.role === "admin" ? "İşletme Sahibi" : "Müşteri"}
+                {(user?.role as "admin" | "customer" | null) === "admin" ? "İşletme Sahibi" : "Müşteri"}
               </span>
             </div>
-            {user && user.role === "admin" && (
+            {(user?.role as "admin" | "customer" | null) === "admin" && (
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <span className="text-sm text-slate-300">Abonelik Durumu</span>
                 <span
