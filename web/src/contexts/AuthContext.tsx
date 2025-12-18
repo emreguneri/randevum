@@ -76,11 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[AuthContext] No firebaseUser, setting user to null");
       setUser(null);
       persistSession(null);
-      // initialized'ı sadece authChecked true olduğunda set et
-      if (authCheckedRef.current) {
-        setLoading(false);
-        setInitialized(true);
-      }
+      setLoading(false);
       return;
     }
 
@@ -113,12 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       setUser(appUser);
     } finally {
-      console.log("[AuthContext] Setting loading=false, initialized=true (authChecked:", authCheckedRef.current, ")");
+      console.log("[AuthContext] Setting loading=false");
       setLoading(false);
-      // initialized'ı sadece authChecked true olduğunda set et
-      if (authCheckedRef.current) {
-        setInitialized(true);
-      }
     }
   };
 
@@ -131,14 +123,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log("[AuthContext] onAuthStateChanged triggered, user:", firebaseUser?.uid || "null", "isFirstCall:", isFirstCall);
       
-      // İlk çağrıda mevcut kullanıcıyı sync et
+      // Kullanıcıyı sync et
       await syncUser(firebaseUser);
       
-      // İlk çağrıdan sonra authChecked'i true yap ve initialized'ı set et
+      // İlk çağrıdan sonra initialized'ı set et (auth state kontrolü tamamlandı)
       if (isFirstCall) {
         isFirstCall = false;
         authCheckedRef.current = true;
-        console.log("[AuthContext] First auth state check completed, setting initialized");
+        console.log("[AuthContext] First auth state check completed, setting initialized=true");
         setInitialized(true);
       }
     });
