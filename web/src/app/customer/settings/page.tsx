@@ -5,15 +5,18 @@ import { auth, db } from "@/lib/firebase";
 import { updateEmail, updatePassword, updateProfile } from "firebase/auth";
 import { doc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 export default function CustomerSettingsPage() {
   const { user, loading: authLoading, initialized, refreshProfile } = useAuth();
   const router = useRouter();
   const [hasRedirected, setHasRedirected] = useState(false);
   
-  // Type guard for admin role - explicit type check to satisfy TypeScript
-  const isAdmin: boolean = user !== null && user !== undefined && user.role !== null && user.role === "admin";
+  // Type guard for admin role - useMemo to ensure proper type inference
+  const isAdmin = useMemo(() => {
+    if (!user || !user.role) return false;
+    return user.role === "admin";
+  }, [user]);
 
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [email, setEmail] = useState(user?.email || "");
