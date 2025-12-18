@@ -117,22 +117,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log("[AuthContext] useEffect - Setting up auth listener");
     
-    // İlk yüklemede mevcut kullanıcıyı hemen kontrol et
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      console.log("[AuthContext] Current user found on mount:", currentUser.uid);
-      syncUser(currentUser).catch(console.error);
-    } else {
-      // Kullanıcı yoksa hemen initialized yap
-      console.log("[AuthContext] No current user, setting initialized");
-      setLoading(false);
-      setInitialized(true);
-    }
-    
     // Auth state değişikliklerini dinle
+    // onAuthStateChanged ilk tetiklendiğinde mevcut kullanıcıyı da döndürür
+    let isFirstCall = true;
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("[AuthContext] onAuthStateChanged triggered, user:", firebaseUser?.uid || "null");
+      console.log("[AuthContext] onAuthStateChanged triggered, user:", firebaseUser?.uid || "null", "isFirstCall:", isFirstCall);
+      
+      // İlk çağrıda mevcut kullanıcıyı sync et
       await syncUser(firebaseUser);
+      
+      // İlk çağrıdan sonra initialized'ı true yap (syncUser zaten set ediyor ama emin olmak için)
+      if (isFirstCall) {
+        isFirstCall = false;
+        console.log("[AuthContext] First auth state check completed");
+      }
     });
     return () => unsub();
     // eslint-disable-next-line react-hooks/exhaustive-deps
