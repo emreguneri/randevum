@@ -32,7 +32,7 @@ export default function CustomerSettingsPage() {
     }
     
     // Admin kullanıcıları dashboard'a yönlendir
-    if (user && user.role === "admin") {
+    if (isAdmin) {
       router.replace("/dashboard/shop");
       return;
     }
@@ -42,7 +42,7 @@ export default function CustomerSettingsPage() {
       setHasRedirected(true);
       router.replace("/auth/login");
     }
-  }, [authLoading, initialized, user, router, hasRedirected]);
+  }, [authLoading, initialized, isAdmin, user, router, hasRedirected]);
 
   // Loading durumunda veya henüz initialized olmadıysa bekle
   if (authLoading || !initialized) {
