@@ -21,7 +21,7 @@ export default function CustomerSettingsPage() {
   const [updating, setUpdating] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // User yoksa login'e yönlendir - sadece initialized ve loading false olduğunda
+  // Yönlendirme kontrolü - sadece initialized ve loading false olduğunda
   useEffect(() => {
     // Henüz yükleniyorsa bekle
     if (authLoading || !initialized) {
@@ -52,14 +52,8 @@ export default function CustomerSettingsPage() {
     );
   }
 
-  // User yoksa login'e yönlendir (useEffect'te yapılıyor)
-  useEffect(() => {
-    if (initialized && !user) {
-      router.replace("/auth/login");
-    }
-  }, [initialized, user, router]);
-
-  if (initialized && !user) {
+  // Yönlendirme yapılıyorsa loading göster (useEffect'te yapılıyor)
+  if (!user || user?.role === "admin") {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-center py-20">
