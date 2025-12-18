@@ -148,9 +148,23 @@ export default function CustomerBookingsPage() {
     );
   }
 
-  // Yönlendirme yapılıyorsa loading göster (useEffect'te yapılıyor)
-  // User yoksa veya admin ise useEffect yönlendirecek, bu sırada loading göster
-  if (!user || user?.role === "admin") {
+  // Initialized olduğunda ve user yoksa login'e yönlendir
+  if (initialized && !user) {
+    // useEffect'te yönlendirme yapılıyor, bu sırada loading göster
+    return (
+      <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-12 text-center backdrop-blur">
+            <p className="text-slate-300">Yönlendiriliyor...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin kullanıcıları dashboard'a yönlendir
+  if (initialized && user && user.role === "admin") {
+    // useEffect'te yönlendirme yapılıyor, bu sırada loading göster
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
