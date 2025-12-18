@@ -87,7 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
-        role: (roleData?.role as AppUser["role"]) ?? null,
+        role: (roleData?.role === "admin" || roleData?.role === "customer" 
+          ? roleData.role 
+          : null) as AppUser["role"],
         subscriptionStatus: roleData?.subscriptionStatus,
       };
 
