@@ -69,8 +69,21 @@ export default function CustomerSettingsPage() {
     );
   }
 
-  // Yönlendirme yapılıyorsa loading göster (useEffect'te yapılıyor)
-  if (!user || isAdmin) {
+  // Initialized olduğunda ve user yoksa login'e yönlendir
+  if (initialized && !user) {
+    // useEffect'te yönlendirme yapılıyor, bu sırada loading göster
+    return (
+      <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-center py-20">
+          <p className="text-slate-300">Yönlendiriliyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin kullanıcıları dashboard'a yönlendir
+  if (initialized && user && isAdmin) {
+    // useEffect'te yönlendirme yapılıyor, bu sırada loading göster
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-center py-20">
