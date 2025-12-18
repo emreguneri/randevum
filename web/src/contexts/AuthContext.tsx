@@ -123,15 +123,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log("[AuthContext] onAuthStateChanged triggered, user:", firebaseUser?.uid || "null", "isFirstCall:", isFirstCall);
       
-      // Kullanıcıyı sync et
-      await syncUser(firebaseUser);
-      
-      // İlk çağrıdan sonra initialized'ı set et (auth state kontrolü tamamlandı)
-      if (isFirstCall) {
-        isFirstCall = false;
-        authCheckedRef.current = true;
-        console.log("[AuthContext] First auth state check completed, setting initialized=true");
-        setInitialized(true);
+      try {
+        // Kullanıcıyı sync et
+        await syncUser(firebaseUser);
+        
+        // İlk çağrıdan sonra initialized'ı set et (auth state kontrolü tamamlandı)
+        if (isFirstCall) {
+          isFirstCall = false;
+          authCheckedRef.current = true;
+          console.log("[AuthContext] First auth state check completed, setting initialized=true");
+          setInitialized(true);
+        }
+      } catch (error) {
+        console.error("[AuthContext] Error in onAuthStateChanged callback:", error);
+        // Hata olsa bile initialized'ı set et (kullanıcı yoksa bile)
+        if (isFirstCall) {
+          isFirstCall = false;
+          authCheckedRef.current = true;
+          setInitialized(true);
+        }
       }
     });
     return () => unsub();
