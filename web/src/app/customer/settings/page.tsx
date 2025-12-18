@@ -12,8 +12,8 @@ export default function CustomerSettingsPage() {
   const router = useRouter();
   const [hasRedirected, setHasRedirected] = useState(false);
   
-  // Type guard for admin role - explicit type check
-  const isAdmin = user !== null && user !== undefined && user.role === "admin";
+  // Type guard for admin role - explicit type check to satisfy TypeScript
+  const isAdmin = Boolean(user && (user.role === "admin" as const));
 
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [email, setEmail] = useState(user?.email || "");
