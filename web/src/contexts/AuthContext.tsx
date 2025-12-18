@@ -17,6 +17,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const authCheckedRef = useRef(false); // onAuthStateChanged ilk çağrısı tamamlandı mı?
   const router = useRouter();
 
   const persistSession = (appUser: AppUser | null) => {
@@ -73,9 +75,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!firebaseUser) {
       console.log("[AuthContext] No firebaseUser, setting user to null");
       setUser(null);
-      setLoading(false);
-      setInitialized(true);
       persistSession(null);
+      // initialized'ı sadece authChecked true olduğunda set et
+      if (authCheckedRef.current) {
+        setLoading(false);
+        setInitialized(true);
+      }
       return;
     }
 
@@ -108,9 +113,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       setUser(appUser);
     } finally {
-      console.log("[AuthContext] Setting loading=false, initialized=true");
+      console.log("[AuthContext] Setting loading=false, initialized=true (authChecked:", authCheckedRef.current, ")");
       setLoading(false);
-      setInitialized(true);
+      // initialized'ı sadece authChecked true olduğunda set et
+      if (authCheckedRef.current) {
+        setInitialized(true);
+      }
     }
   };
 
@@ -126,10 +134,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // İlk çağrıda mevcut kullanıcıyı sync et
       await syncUser(firebaseUser);
       
-      // İlk çağrıdan sonra initialized'ı true yap (syncUser zaten set ediyor ama emin olmak için)
+      // İlk çağrıdan sonra authChecked'i true yap ve initialized'ı set et
       if (isFirstCall) {
         isFirstCall = false;
-        console.log("[AuthContext] First auth state check completed");
+        authCheckedRef.current = true;
+        console.log("[AuthContext] First auth state check completed, setting initialized");
+        setInitialized(true);
       }
     });
     return () => unsub();
