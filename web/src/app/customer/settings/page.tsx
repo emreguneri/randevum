@@ -273,10 +273,10 @@ export default function CustomerSettingsPage() {
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <span className="text-sm text-slate-300">Hesap Tipi</span>
               <span className="text-sm font-medium text-white">
-                {user?.role === "admin" ? "İşletme Sahibi" : "Müşteri"}
+                {user && user.role === "admin" ? "İşletme Sahibi" : "Müşteri"}
               </span>
             </div>
-            {user?.role === "admin" && (
+            {user && user.role === "admin" && (
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <span className="text-sm text-slate-300">Abonelik Durumu</span>
                 <span
