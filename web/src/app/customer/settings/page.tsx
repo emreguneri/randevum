@@ -21,13 +21,25 @@ export default function CustomerSettingsPage() {
   const [updating, setUpdating] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // User yoksa login'e yönlendir - sadece bir kez
+  // User yoksa login'e yönlendir - sadece initialized ve loading false olduğunda
   useEffect(() => {
-    if (initialized && !user && !hasRedirected) {
+    // Henüz yükleniyorsa bekle
+    if (authLoading || !initialized) {
+      return;
+    }
+    
+    // Admin kullanıcıları dashboard'a yönlendir
+    if (user?.role === "admin") {
+      router.replace("/dashboard/shop");
+      return;
+    }
+    
+    // User yoksa login'e yönlendir
+    if (!user && !hasRedirected) {
       setHasRedirected(true);
       router.replace("/auth/login");
     }
-  }, [initialized, user, router, hasRedirected]);
+  }, [authLoading, initialized, user, router, hasRedirected]);
 
   // Loading durumunda veya henüz initialized olmadıysa bekle
   if (authLoading || !initialized) {

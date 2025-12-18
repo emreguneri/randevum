@@ -31,32 +31,25 @@ export default function CustomerBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log("[CustomerBookings] Render - user:", user?.uid, "loading:", loading, "initialized:", initialized);
-
-  // Yönlendirme kontrolü - sadece initialized olduğunda
+  // Yönlendirme kontrolü - sadece initialized olduğunda ve loading false olduğunda
   useEffect(() => {
-    console.log("[CustomerBookings] useEffect - initialized:", initialized, "user:", user?.uid, "role:", user?.role);
-    if (!initialized) {
-      console.log("[CustomerBookings] Not initialized yet, waiting...");
+    // Henüz yükleniyorsa bekle
+    if (loading || !initialized) {
       return;
     }
     
     // Admin kullanıcıları dashboard'a yönlendir
     if (user?.role === "admin") {
-      console.log("[CustomerBookings] Admin user, redirecting to dashboard");
       router.replace("/dashboard/bookings");
       return;
     }
     
-    // User yoksa login'e yönlendir
+    // User yoksa login'e yönlendir (sadece initialized ve loading false olduğunda)
     if (!user) {
-      console.log("[CustomerBookings] No user, redirecting to login");
       router.replace("/auth/login");
       return;
     }
-    
-    console.log("[CustomerBookings] User exists, showing page");
-  }, [initialized, user?.role, user, router]);
+  }, [loading, initialized, user?.role, user, router]);
 
   useEffect(() => {
     if (!user?.uid) return;
