@@ -32,7 +32,7 @@ export default function CustomerSettingsPage() {
     }
     
     // Admin kullanıcıları dashboard'a yönlendir
-    if (isAdmin) {
+    if (user && user.role === "admin") {
       router.replace("/dashboard/shop");
       return;
     }
