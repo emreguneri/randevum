@@ -11,6 +11,9 @@ export default function CustomerSettingsPage() {
   const { user, loading: authLoading, initialized, refreshProfile } = useAuth();
   const router = useRouter();
   const [hasRedirected, setHasRedirected] = useState(false);
+  
+  // Type guard for admin role
+  const isAdmin = user?.role === "admin";
 
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -29,7 +32,7 @@ export default function CustomerSettingsPage() {
     }
     
     // Admin kullanıcıları dashboard'a yönlendir
-    if (user && (user.role as "admin" | "customer" | null) === "admin") {
+    if (isAdmin) {
       router.replace("/dashboard/shop");
       return;
     }
@@ -53,7 +56,7 @@ export default function CustomerSettingsPage() {
   }
 
   // Yönlendirme yapılıyorsa loading göster (useEffect'te yapılıyor)
-  if (!user || (user.role as "admin" | "customer" | null) === "admin") {
+  if (!user || isAdmin) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-center py-20">
@@ -273,10 +276,10 @@ export default function CustomerSettingsPage() {
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <span className="text-sm text-slate-300">Hesap Tipi</span>
               <span className="text-sm font-medium text-white">
-                {(user?.role as "admin" | "customer" | null) === "admin" ? "İşletme Sahibi" : "Müşteri"}
+                {isAdmin ? "İşletme Sahibi" : "Müşteri"}
               </span>
             </div>
-            {(user?.role as "admin" | "customer" | null) === "admin" && (
+            {isAdmin && (
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <span className="text-sm text-slate-300">Abonelik Durumu</span>
                 <span
