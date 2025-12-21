@@ -306,7 +306,7 @@ export default function CustomerSettingsPage() {
                 {isAdmin ? "İşletme Sahibi" : "Müşteri"}
               </span>
             </div>
-            {isAdmin && (
+            {isAdmin && user && (
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <span className="text-sm text-slate-300">Abonelik Durumu</span>
                 <span
