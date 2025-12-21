@@ -3,6 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -120,13 +121,27 @@ export default function CustomerBookingsPage() {
     );
   }
 
-  // Initialized olduğunda ve user yoksa login'e yönlendir (sadece bir kez)
-  useEffect(() => {
-    if (initialized && !user && !loading) {
-      console.log("[CustomerBookings] No user after initialization, redirecting to login");
-      router.replace("/auth/login");
-    }
-  }, [initialized, user, loading, router]);
+  // User yoksa login linki göster (yönlendirme yapmıyoruz, kullanıcı isterse login'e gidebilir)
+
+  // User yoksa login mesajı göster
+  if (initialized && !user) {
+    return (
+      <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+          <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-12 text-center backdrop-blur">
+            <h1 className="text-2xl font-semibold text-white mb-4">Giriş Yapmanız Gerekiyor</h1>
+            <p className="text-slate-300 mb-6">Randevularınızı görüntülemek için lütfen giriş yapın.</p>
+            <Link
+              href="/auth/login"
+              className="inline-block rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-medium text-white transition hover:opacity-90"
+            >
+              Giriş Yap
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">

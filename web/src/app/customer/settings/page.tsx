@@ -40,13 +40,7 @@ export default function CustomerSettingsPage() {
     );
   }
 
-  // Initialized olduğunda ve user yoksa login'e yönlendir (sadece bir kez)
-  useEffect(() => {
-    if (initialized && !user && !authLoading) {
-      console.log("[CustomerSettings] No user after initialization, redirecting to login");
-      router.replace("/auth/login");
-    }
-  }, [initialized, user, authLoading, router]);
+  // User yoksa login linki göster (yönlendirme yapmıyoruz, kullanıcı isterse login'e gidebilir)
 
   const handleUpdateProfile = async (e: FormEvent) => {
     e.preventDefault();
