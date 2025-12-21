@@ -27,30 +27,7 @@ export default function CustomerSettingsPage() {
   const [updating, setUpdating] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // Yönlendirme kontrolü - sadece initialized ve loading false olduğunda
-  useEffect(() => {
-    // Henüz yükleniyorsa bekle
-    if (authLoading || !initialized) {
-      console.log("[CustomerSettings] Waiting for auth to initialize...", { authLoading, initialized });
-      return;
-    }
-    
-    console.log("[CustomerSettings] Auth initialized, checking user:", { 
-      hasUser: !!user, 
-      isAdmin,
-      role: user?.role 
-    });
-    
-    // User yoksa login'e yönlendir
-    if (!user && !hasRedirected) {
-      console.log("[CustomerSettings] No user, redirecting to login");
-      setHasRedirected(true);
-      router.replace("/auth/login");
-      return;
-    }
-    
-    console.log("[CustomerSettings] User exists, showing page");
-  }, [authLoading, initialized, user, router, hasRedirected]);
+  // Yönlendirme kontrolü - sadece render-time'da yapılacak
 
   // Loading durumunda veya henüz initialized olmadıysa bekle
   if (authLoading || !initialized) {
@@ -63,17 +40,13 @@ export default function CustomerSettingsPage() {
     );
   }
 
-  // Initialized olduğunda ve user yoksa login'e yönlendir
-  if (initialized && !user) {
-    // useEffect'te yönlendirme yapılıyor, bu sırada loading göster
-    return (
-      <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-center py-20">
-          <p className="text-slate-300">Yönlendiriliyor...</p>
-        </div>
-      </div>
-    );
-  }
+  // Initialized olduğunda ve user yoksa login'e yönlendir (sadece bir kez)
+  useEffect(() => {
+    if (initialized && !user && !authLoading) {
+      console.log("[CustomerSettings] No user after initialization, redirecting to login");
+      router.replace("/auth/login");
+    }
+  }, [initialized, user, authLoading, router]);
 
   const handleUpdateProfile = async (e: FormEvent) => {
     e.preventDefault();

@@ -31,28 +31,7 @@ export default function CustomerBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Yönlendirme kontrolü - sadece initialized olduğunda ve loading false olduğunda
-  useEffect(() => {
-    // Henüz yükleniyorsa bekle
-    if (loading || !initialized) {
-      console.log("[CustomerBookings] Waiting for auth to initialize...", { loading, initialized });
-      return;
-    }
-    
-    console.log("[CustomerBookings] Auth initialized, checking user:", { 
-      hasUser: !!user, 
-      role: user?.role 
-    });
-    
-    // User yoksa login'e yönlendir (sadece initialized ve loading false olduğunda)
-    if (!user) {
-      console.log("[CustomerBookings] No user, redirecting to login");
-      router.replace("/auth/login");
-      return;
-    }
-    
-    console.log("[CustomerBookings] User exists, showing page");
-  }, [loading, initialized, user, router]);
+  // Yönlendirme kontrolü - sadece render-time'da yapılacak
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -141,19 +120,13 @@ export default function CustomerBookingsPage() {
     );
   }
 
-  // Initialized olduğunda ve user yoksa login'e yönlendir
-  if (initialized && !user) {
-    // useEffect'te yönlendirme yapılıyor, bu sırada loading göster
-    return (
-      <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
-          <div className="rounded-3xl border border-white/10 bg-white/5 px-8 py-12 text-center backdrop-blur">
-            <p className="text-slate-300">Yönlendiriliyor...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Initialized olduğunda ve user yoksa login'e yönlendir (sadece bir kez)
+  useEffect(() => {
+    if (initialized && !user && !loading) {
+      console.log("[CustomerBookings] No user after initialization, redirecting to login");
+      router.replace("/auth/login");
+    }
+  }, [initialized, user, loading, router]);
 
   return (
     <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
