@@ -15,6 +15,8 @@ export default function PaymentScreen() {
   const email = params.email as string;
   const name = params.name as string;
   const userType = params.userType as string;
+  const isExtend = params.extend === 'true';
+  const durationMonths = params.duration ? parseInt(params.duration as string, 10) : 1;
   const { user } = useAuth();
 
   const [cardNumber, setCardNumber] = useState('');
@@ -25,9 +27,21 @@ export default function PaymentScreen() {
   const [contactPhone, setContactPhone] = useState('');
   const [identityNumber, setIdentityNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentSubscriptionEnd, setCurrentSubscriptionEnd] = useState<Date | null>(null);
 
   // Aylık abonelik ücreti
   const MONTHLY_FEE = 99.99;
+  
+  // Süre bazlı fiyatlandırma (indirimli)
+  const getPriceForDuration = (months: number): number => {
+    const basePrice = MONTHLY_FEE * months;
+    if (months >= 12) return basePrice * 0.8; // 20% indirim
+    if (months >= 6) return basePrice * 0.85; // 15% indirim
+    if (months >= 3) return basePrice * 0.9; // 10% indirim
+    return basePrice;
+  };
+
+  const selectedPrice = isExtend ? getPriceForDuration(durationMonths) : MONTHLY_FEE;
 
   const formatCardNumber = (text: string) => {
     // Sadece rakamları al
@@ -69,13 +83,28 @@ export default function PaymentScreen() {
         if (!contactPhone && user?.phoneNumber) {
           setContactPhone(user.phoneNumber);
         }
+
+        // Eğer extend modundaysa, mevcut abonelik bitiş tarihini yükle
+        if (isExtend && user?.uid) {
+          const { doc, getDoc } = await import('firebase/firestore');
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.subscriptionEndsAt) {
+              const endDate = userData.subscriptionEndsAt?.toDate 
+                ? userData.subscriptionEndsAt.toDate() 
+                : new Date(userData.subscriptionEndsAt);
+              setCurrentSubscriptionEnd(endDate);
+            }
+          }
+        }
       } catch (error) {
         console.warn('[Payment] Pending info yüklenemedi:', error);
       }
     };
 
     loadPendingInfo();
-  }, [contactName, contactPhone, user?.phoneNumber]);
+  }, [contactName, contactPhone, user?.phoneNumber, isExtend, user?.uid]);
 
   const handlePayment = async () => {
     if (!cardNumber.trim() || !cardHolder.trim() || !expiryDate.trim() || !cvv.trim()) {
@@ -150,7 +179,20 @@ export default function PaymentScreen() {
       }
 
       const subscriptionData = response.data.data;
-      const subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      
+      // Eğer extend modundaysa, mevcut bitiş tarihine ekle, değilse yeni tarih hesapla
+      let subscriptionEndDate: string;
+      if (isExtend && currentSubscriptionEnd) {
+        // Mevcut bitiş tarihine seçilen süreyi ekle
+        const newEndDate = new Date(currentSubscriptionEnd);
+        newEndDate.setMonth(newEndDate.getMonth() + durationMonths);
+        subscriptionEndDate = newEndDate.toISOString();
+      } else {
+        // Yeni abonelik: şu anki tarihten itibaren seçilen süre kadar
+        const newEndDate = new Date();
+        newEndDate.setMonth(newEndDate.getMonth() + (isExtend ? durationMonths : 1));
+        subscriptionEndDate = newEndDate.toISOString();
+      }
 
       if (user?.uid) {
         await setDoc(
@@ -228,13 +270,26 @@ export default function PaymentScreen() {
           <View style={styles.pricingCard}>
             <View style={styles.pricingHeader}>
               <IconSymbol name="building.2.fill" size={48} color="#dc2626" />
-              <Text style={styles.pricingTitle}>İşletme Sahibi Üyeliği</Text>
-              <Text style={styles.pricingSubtitle}>Aylık Abonelik</Text>
+              <Text style={styles.pricingTitle}>
+                {isExtend ? 'Abonelik Uzatma' : 'İşletme Sahibi Üyeliği'}
+              </Text>
+              <Text style={styles.pricingSubtitle}>
+                {isExtend 
+                  ? `${durationMonths} ${durationMonths === 1 ? 'Ay' : 'Ay'} Abonelik`
+                  : 'Aylık Abonelik'}
+              </Text>
             </View>
             <View style={styles.priceContainer}>
-              <Text style={styles.priceAmount}>{MONTHLY_FEE.toFixed(2)}</Text>
+              <Text style={styles.priceAmount}>{selectedPrice.toFixed(2)}</Text>
               <Text style={styles.priceCurrency}>₺</Text>
             </View>
+            {isExtend && durationMonths > 1 && (
+              <View style={styles.discountBadge}>
+                <Text style={styles.discountText}>
+                  {durationMonths >= 12 ? '20%' : durationMonths >= 6 ? '15%' : '10%'} İndirim
+                </Text>
+              </View>
+            )}
             <View style={styles.featuresList}>
               <View style={styles.featureItem}>
                 <IconSymbol name="checkmark.circle.fill" size={20} color="#10b981" />
@@ -458,6 +513,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#dc2626',
     marginLeft: 4,
+  },
+  discountBadge: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'center',
+    marginTop: -10,
+    marginBottom: 10,
+  },
+  discountText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
   },
   featuresList: {
     gap: 12,

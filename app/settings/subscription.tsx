@@ -4,7 +4,7 @@ import { db } from '@/config/firebase';
 import { router, useFocusEffect } from 'expo-router';
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { useCallback, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function SubscriptionSettings() {
   const { user } = useAuth();
@@ -14,6 +14,15 @@ export default function SubscriptionSettings() {
     subscriptionEndDate: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  
+  // Abonelik süre seçenekleri (ay cinsinden)
+  const subscriptionDurations = [
+    { months: 1, label: '1 Ay', price: 99.99 },
+    { months: 3, label: '3 Ay', price: 269.97, discount: '10% İndirim' },
+    { months: 6, label: '6 Ay', price: 509.94, discount: '15% İndirim' },
+    { months: 12, label: '1 Yıl', price: 959.88, discount: '20% İndirim' },
+  ];
 
   const loadSubscriptionInfo = useCallback(async () => {
     if (!user?.uid) {
@@ -107,6 +116,15 @@ export default function SubscriptionSettings() {
 
   const handleRenewSubscription = () => {
     router.push('/payment?renew=true');
+  };
+
+  const handleExtendSubscription = () => {
+    setShowExtendModal(true);
+  };
+
+  const handleSelectDuration = (months: number) => {
+    setShowExtendModal(false);
+    router.push(`/payment?extend=true&duration=${months}`);
   };
 
   const handleCancelSubscription = () => {
@@ -203,6 +221,14 @@ export default function SubscriptionSettings() {
               <Text style={styles.sectionTitle}>Abonelik İşlemleri</Text>
               
               <TouchableOpacity 
+                style={[styles.actionButton, styles.extendButton]}
+                onPress={handleExtendSubscription}
+              >
+                <IconSymbol name="calendar.badge.plus" size={20} color="#fff" />
+                <Text style={styles.actionButtonText}>Aboneliği Uzat</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
                 style={[styles.actionButton, styles.renewButton]}
                 onPress={handleRenewSubscription}
               >
@@ -237,6 +263,49 @@ export default function SubscriptionSettings() {
           </View>
         )}
       </View>
+
+      {/* Abonelik Uzatma Modal */}
+      <Modal
+        visible={showExtendModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowExtendModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Abonelik Süresi Seçin</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowExtendModal(false)}
+              >
+                <IconSymbol name="xmark" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll}>
+              {subscriptionDurations.map((duration) => (
+                <TouchableOpacity
+                  key={duration.months}
+                  style={styles.durationOption}
+                  onPress={() => handleSelectDuration(duration.months)}
+                >
+                  <View style={styles.durationInfo}>
+                    <Text style={styles.durationLabel}>{duration.label}</Text>
+                    {duration.discount && (
+                      <Text style={styles.durationDiscount}>{duration.discount}</Text>
+                    )}
+                  </View>
+                  <View style={styles.durationPrice}>
+                    <Text style={styles.durationPriceAmount}>{duration.price.toFixed(2)}</Text>
+                    <Text style={styles.durationPriceCurrency}>₺</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -380,6 +449,83 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  extendButton: {
+    backgroundColor: '#10b981',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '80%',
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalScroll: {
+    padding: 20,
+  },
+  durationOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+  },
+  durationInfo: {
+    flex: 1,
+  },
+  durationLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  durationDiscount: {
+    fontSize: 13,
+    color: '#10b981',
+    fontWeight: '600',
+  },
+  durationPrice: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  durationPriceAmount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#ef4444',
+  },
+  durationPriceCurrency: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ef4444',
+    marginLeft: 4,
   },
 });
 
