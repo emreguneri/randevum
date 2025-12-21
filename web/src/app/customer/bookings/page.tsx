@@ -44,13 +44,6 @@ export default function CustomerBookingsPage() {
       role: user?.role 
     });
     
-    // Admin kullanıcıları dashboard'a yönlendir
-    if (user && user.role === "admin") {
-      console.log("[CustomerBookings] Admin user, redirecting to dashboard");
-      router.replace("/dashboard/bookings");
-      return;
-    }
-    
     // User yoksa login'e yönlendir (sadece initialized ve loading false olduğunda)
     if (!user) {
       console.log("[CustomerBookings] No user, redirecting to login");
