@@ -445,73 +445,73 @@ export default function ProfilePage() {
           </h2>
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Link
-              href="/customer/bookings"
-              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-fuchsia-500/50 hover:bg-white/10"
+            <button
+              onClick={() => router.push("/customer/bookings")}
+              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:border-fuchsia-500/50 hover:bg-white/10 cursor-pointer"
             >
               <span className="text-3xl">📅</span>
               <div>
                 <p className="font-semibold text-white">Randevularım</p>
                 <p className="text-sm text-slate-400">Tüm randevularınızı görüntüleyin</p>
               </div>
-            </Link>
+            </button>
             
-            <Link
-              href="/customer/settings"
-              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-fuchsia-500/50 hover:bg-white/10"
+            <button
+              onClick={() => router.push("/customer/settings")}
+              className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:border-fuchsia-500/50 hover:bg-white/10 cursor-pointer"
             >
               <span className="text-3xl">⚙️</span>
               <div>
                 <p className="font-semibold text-white">Hesap Ayarları</p>
                 <p className="text-sm text-slate-400">Profil ve şifre ayarları</p>
               </div>
-            </Link>
+            </button>
             
             {isAdmin && (
               <>
-                <Link
-                  href="/dashboard/shop"
-                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-fuchsia-500/50 hover:bg-white/10"
+                <button
+                  onClick={() => router.push("/dashboard/shop")}
+                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:border-fuchsia-500/50 hover:bg-white/10 cursor-pointer"
                 >
                   <span className="text-3xl">🏪</span>
                   <div>
                     <p className="font-semibold text-white">Mekan Yönetimi</p>
                     <p className="text-sm text-slate-400">İşletmenizi düzenleyin</p>
                   </div>
-                </Link>
+                </button>
                 
-                <Link
-                  href="/dashboard/bookings"
-                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-fuchsia-500/50 hover:bg-white/10"
+                <button
+                  onClick={() => router.push("/dashboard/bookings")}
+                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:border-fuchsia-500/50 hover:bg-white/10 cursor-pointer"
                 >
                   <span className="text-3xl">📋</span>
                   <div>
                     <p className="font-semibold text-white">Randevu Yönetimi</p>
                     <p className="text-sm text-slate-400">Gelen randevuları yönetin</p>
                   </div>
-                </Link>
+                </button>
                 
-                <Link
-                  href="/dashboard/revenue"
-                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-fuchsia-500/50 hover:bg-white/10"
+                <button
+                  onClick={() => router.push("/dashboard/revenue")}
+                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:border-fuchsia-500/50 hover:bg-white/10 cursor-pointer"
                 >
                   <span className="text-3xl">📈</span>
                   <div>
                     <p className="font-semibold text-white">Gelir & İstatistikler</p>
                     <p className="text-sm text-slate-400">Finansal raporlar</p>
                   </div>
-                </Link>
+                </button>
                 
-                <Link
-                  href="/payment"
-                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-fuchsia-500/50 hover:bg-white/10"
+                <button
+                  onClick={() => router.push("/payment")}
+                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:border-fuchsia-500/50 hover:bg-white/10 cursor-pointer"
                 >
                   <span className="text-3xl">💳</span>
                   <div>
                     <p className="font-semibold text-white">Abonelik</p>
                     <p className="text-sm text-slate-400">Abonelik planınızı yönetin</p>
                   </div>
-                </Link>
+                </button>
               </>
             )}
           </div>
