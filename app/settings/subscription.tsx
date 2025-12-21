@@ -15,13 +15,13 @@ export default function SubscriptionSettings() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [showExtendModal, setShowExtendModal] = useState(false);
-  
-  // Abonelik süre seçenekleri (ay cinsinden)
-  const subscriptionDurations = [
+
+  // Abonelik süre seçenekleri
+  const subscriptionPlans = [
     { months: 1, label: '1 Ay', price: 99.99 },
-    { months: 3, label: '3 Ay', price: 269.97, discount: '10% İndirim' },
-    { months: 6, label: '6 Ay', price: 509.94, discount: '15% İndirim' },
-    { months: 12, label: '1 Yıl', price: 959.88, discount: '20% İndirim' },
+    { months: 3, label: '3 Ay', price: 269.97, discount: '10% İndirim', originalPrice: 299.97 },
+    { months: 6, label: '6 Ay', price: 509.94, discount: '15% İndirim', originalPrice: 599.94 },
+    { months: 12, label: '1 Yıl', price: 959.88, discount: '20% İndirim', originalPrice: 1199.88 },
   ];
 
   const loadSubscriptionInfo = useCallback(async () => {
@@ -122,7 +122,7 @@ export default function SubscriptionSettings() {
     setShowExtendModal(true);
   };
 
-  const handleSelectDuration = (months: number) => {
+  const handleSelectPlan = (months: number) => {
     setShowExtendModal(false);
     router.push(`/payment?extend=true&duration=${months}`);
   };
@@ -224,7 +224,7 @@ export default function SubscriptionSettings() {
                 style={[styles.actionButton, styles.extendButton]}
                 onPress={handleExtendSubscription}
               >
-                <IconSymbol name="calendar.badge.plus" size={20} color="#fff" />
+                <IconSymbol name="plus.circle.fill" size={20} color="#fff" />
                 <Text style={styles.actionButtonText}>Aboneliği Uzat</Text>
               </TouchableOpacity>
 
@@ -283,23 +283,34 @@ export default function SubscriptionSettings() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalScroll}>
-              {subscriptionDurations.map((duration) => (
+            <ScrollView style={styles.plansContainer}>
+              {subscriptionPlans.map((plan) => (
                 <TouchableOpacity
-                  key={duration.months}
-                  style={styles.durationOption}
-                  onPress={() => handleSelectDuration(duration.months)}
+                  key={plan.months}
+                  style={styles.planCard}
+                  onPress={() => handleSelectPlan(plan.months)}
                 >
-                  <View style={styles.durationInfo}>
-                    <Text style={styles.durationLabel}>{duration.label}</Text>
-                    {duration.discount && (
-                      <Text style={styles.durationDiscount}>{duration.discount}</Text>
+                  <View style={styles.planHeader}>
+                    <Text style={styles.planLabel}>{plan.label}</Text>
+                    {plan.discount && (
+                      <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>{plan.discount}</Text>
+                      </View>
                     )}
                   </View>
-                  <View style={styles.durationPrice}>
-                    <Text style={styles.durationPriceAmount}>{duration.price.toFixed(2)}</Text>
-                    <Text style={styles.durationPriceCurrency}>₺</Text>
+                  <View style={styles.planPriceContainer}>
+                    {plan.originalPrice && (
+                      <Text style={styles.planOriginalPrice}>
+                        {plan.originalPrice.toFixed(2)} ₺
+                      </Text>
+                    )}
+                    <Text style={styles.planPrice}>{plan.price.toFixed(2)} ₺</Text>
                   </View>
+                  {plan.months > 1 && (
+                    <Text style={styles.planMonthlyPrice}>
+                      Aylık: {(plan.price / plan.months).toFixed(2)} ₺
+                    </Text>
+                  )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -409,6 +420,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
+  extendButton: {
+    backgroundColor: '#10b981',
+  },
   renewButton: {
     backgroundColor: '#ef4444',
   },
@@ -450,9 +464,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  extendButton: {
-    backgroundColor: '#10b981',
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -484,48 +495,59 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalScroll: {
+  plansContainer: {
     padding: 20,
   },
-  durationOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  planCard: {
     backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     borderWidth: 2,
     borderColor: '#e2e8f0',
   },
-  durationInfo: {
-    flex: 1,
-  },
-  durationLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  durationDiscount: {
-    fontSize: 13,
-    color: '#10b981',
-    fontWeight: '600',
-  },
-  durationPrice: {
+  planHeader: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  durationPriceAmount: {
+  planLabel: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ef4444',
+    color: '#1e293b',
   },
-  durationPriceCurrency: {
-    fontSize: 14,
+  discountBadge: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  discountText: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#ef4444',
-    marginLeft: 4,
+    color: '#fff',
+  },
+  planPriceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  planOriginalPrice: {
+    fontSize: 14,
+    color: '#94a3b8',
+    textDecorationLine: 'line-through',
+    marginRight: 8,
+  },
+  planPrice: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  planMonthlyPrice: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
   },
 });
 
