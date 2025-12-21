@@ -128,18 +128,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await syncUser(firebaseUser);
         
         // İlk çağrıdan sonra initialized'ı set et (auth state kontrolü tamamlandı)
+        // ÖNEMLİ: syncUser tamamlandıktan sonra initialized set ediliyor, bu sayede user mutlaka yüklenmiş oluyor
         if (isFirstCall) {
           isFirstCall = false;
           authCheckedRef.current = true;
-          console.log("[AuthContext] First auth state check completed, setting initialized=true");
+          console.log("[AuthContext] First auth state check completed, user synced, setting initialized=true");
           setInitialized(true);
         }
       } catch (error) {
         console.error("[AuthContext] Error in onAuthStateChanged callback:", error);
         // Hata olsa bile initialized'ı set et (kullanıcı yoksa bile)
+        // syncUser içinde hata olsa bile user state set edilmiş olabilir
         if (isFirstCall) {
           isFirstCall = false;
           authCheckedRef.current = true;
+          console.log("[AuthContext] First auth state check completed (with error), setting initialized=true");
           setInitialized(true);
         }
       }
