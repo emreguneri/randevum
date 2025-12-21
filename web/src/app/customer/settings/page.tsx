@@ -117,8 +117,8 @@ export default function CustomerSettingsPage() {
     }
   };
 
-  // User yoksa login mesajı göster
-  if (initialized && !user) {
+  // User yoksa login mesajı göster (sadece initialized VE loading false olduğunda)
+  if (initialized && !authLoading && !user) {
     return (
       <div className="min-h-screen bg-slate-950 px-6 py-12 text-slate-100 lg:px-12">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
