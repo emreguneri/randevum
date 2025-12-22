@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 const MONTHLY_FEE = 99.99;
@@ -18,7 +18,7 @@ const getPriceForDuration = (months: number): number => {
   return basePrice;
 };
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const { user, loading: authLoading, refreshProfile } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -383,6 +383,18 @@ export default function PaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-white">Yükleniyor...</div>
+      </div>
+    }>
+      <PaymentPageContent />
+    </Suspense>
   );
 }
 
