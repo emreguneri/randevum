@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.happyhour.randevum",
-      "buildNumber": "9",
+      "buildNumber": "10",
       "deploymentTarget": "13.4",
       "config": {
         "usesNonExemptEncryption": false
