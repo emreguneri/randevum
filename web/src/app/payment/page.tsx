@@ -23,6 +23,7 @@ function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isExtend = searchParams.get("extend") === "true";
+  const isUpgrade = searchParams.get("upgrade") === "true";
   const durationMonths = searchParams.get("duration") ? parseInt(searchParams.get("duration") as string, 10) : 1;
   const [cardNumber, setCardNumber] = useState("");
   const [cardHolder, setCardHolder] = useState("");
@@ -35,7 +36,7 @@ function PaymentPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [currentSubscriptionEnd, setCurrentSubscriptionEnd] = useState<Date | null>(null);
   
-  const selectedPrice = isExtend ? getPriceForDuration(durationMonths) : MONTHLY_FEE;
+  const selectedPrice = (isExtend || isUpgrade) ? getPriceForDuration(durationMonths) : MONTHLY_FEE;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -177,9 +178,9 @@ function PaymentPageContent() {
         subscriptionEndDate = new Date(currentSubscriptionEnd);
         subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + durationMonths);
       } else {
-        // Yeni abonelik veya uzatma (mevcut tarih yoksa)
+        // Yeni abonelik (upgrade veya normal) - duration parametresine göre
         subscriptionEndDate = new Date();
-        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + (isExtend ? durationMonths : 1));
+        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + ((isExtend || isUpgrade) ? durationMonths : 1));
       }
 
       if (user?.uid) {
@@ -188,7 +189,7 @@ function PaymentPageContent() {
           {
             role: "admin",
             subscriptionStatus: "active",
-            subscriptionPlan: isExtend ? `business-${durationMonths}month` : "business-monthly",
+            subscriptionPlan: (isExtend || isUpgrade) ? `business-${durationMonths}month` : "business-monthly",
             subscriptionProvider: "iyzico",
             subscriptionEndsAt: subscriptionEndDate.toISOString(),
             subscriptionStartedAt: serverTimestamp(),
@@ -236,10 +237,10 @@ function PaymentPageContent() {
         <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white">
-              {isExtend ? "Aboneliği Uzat" : "İşletme Sahibi Ödeme"}
+              {isExtend ? "Aboneliği Uzat" : isUpgrade ? "İşletme Sahibi Ol" : "İşletme Sahibi Ödeme"}
             </h1>
             <p className="mt-2 text-slate-300">
-              {isExtend ? (
+              {(isExtend || isUpgrade) && durationMonths > 1 ? (
                 <>
                   {durationMonths} {durationMonths === 1 ? "Ay" : "Ay"} abonelik ücreti:{" "}
                   <span className="font-semibold text-white">{selectedPrice.toFixed(2)} ₺</span>
@@ -378,7 +379,7 @@ function PaymentPageContent() {
               >
                 {loading 
                   ? "İşleniyor..." 
-                  : isExtend 
+                  : (isExtend || isUpgrade) 
                     ? `${selectedPrice.toFixed(2)} ₺ Öde` 
                     : `${MONTHLY_FEE.toFixed(2)} ₺ Öde`
                 }

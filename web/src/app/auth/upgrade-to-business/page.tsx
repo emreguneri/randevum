@@ -3,11 +3,20 @@
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function UpgradeToBusinessPage() {
   const { user, loading, initialized } = useAuth();
   const router = useRouter();
+  const [showPlanModal, setShowPlanModal] = useState(false);
+
+  // Abonelik süre seçenekleri
+  const subscriptionPlans = [
+    { months: 1, label: "1 Ay", price: 800 },
+    { months: 3, label: "3 Ay", price: 2160, discount: "10% İndirim", originalPrice: 2400 },
+    { months: 6, label: "6 Ay", price: 4080, discount: "15% İndirim", originalPrice: 4800 },
+    { months: 12, label: "1 Yıl", price: 7680, discount: "20% İndirim", originalPrice: 9600 },
+  ];
 
   // Yönlendirme kontrolü
   useEffect(() => {
@@ -20,11 +29,13 @@ export default function UpgradeToBusinessPage() {
     }
   }, [initialized, user, router]);
 
-  const handleUpgrade = async () => {
-    if (!user?.uid) return;
+  const handleUpgrade = () => {
+    setShowPlanModal(true);
+  };
 
-    // Ödeme sayfasına yönlendir
-    router.push("/payment?upgrade=true");
+  const handleSelectPlan = (months: number) => {
+    setShowPlanModal(false);
+    router.push(`/payment?upgrade=true&duration=${months}`);
   };
 
   // Loading durumunda bekle
@@ -129,12 +140,12 @@ export default function UpgradeToBusinessPage() {
         {(
           <div className="rounded-3xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 p-8 backdrop-blur">
             <div className="text-center">
-              <p className="text-sm text-purple-300">İşletme sahibi olduktan sonra</p>
+              <p className="text-sm text-purple-300">Aylık abonelik ücreti</p>
               <p className="mt-1 text-3xl font-bold text-white">
-                7 Gün Ücretsiz Deneme
+                800 ₺
               </p>
               <p className="mt-2 text-sm text-slate-400">
-                Deneme süresinden sonra aylık ₺299'dan başlayan paketler
+                3 ay, 6 ay ve 1 yıllık paketlerde indirim fırsatları
               </p>
             </div>
           </div>
@@ -171,6 +182,55 @@ export default function UpgradeToBusinessPage() {
             'nı kabul etmiş olursunuz.
           </p>
         )}
+
+      {/* Abonelik Planı Seçim Modal */}
+      {showPlanModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
+          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Abonelik Süresi Seçin</h2>
+              <button
+                onClick={() => setShowPlanModal(false)}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {subscriptionPlans.map((plan) => (
+                <button
+                  key={plan.months}
+                  onClick={() => handleSelectPlan(plan.months)}
+                  className="rounded-xl border-2 border-white/10 bg-white/5 p-6 text-left transition hover:border-fuchsia-500/50 hover:bg-white/10"
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-lg font-semibold text-white">{plan.label}</span>
+                    {plan.discount && (
+                      <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-300">
+                        {plan.discount}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mb-2 flex items-baseline gap-2">
+                    {plan.originalPrice && (
+                      <span className="text-sm text-slate-400 line-through">
+                        {plan.originalPrice.toFixed(2)} ₺
+                      </span>
+                    )}
+                    <span className="text-2xl font-bold text-white">{plan.price.toFixed(2)} ₺</span>
+                  </div>
+                  {plan.months > 1 && (
+                    <p className="text-sm text-slate-400">
+                      Aylık: {(plan.price / plan.months).toFixed(2)} ₺
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

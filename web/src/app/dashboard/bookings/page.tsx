@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface Booking {
   id: string;

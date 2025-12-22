@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import { collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { useCallback, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Takvim Görünümü Komponenti
 function CalendarView({ 
@@ -219,6 +219,15 @@ export default function ProfileScreen() {
     daysRemaining: number | null;
     subscriptionEndDate: string | null;
   } | null>(null);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+
+  // Abonelik süre seçenekleri
+  const subscriptionPlans = [
+    { months: 1, label: '1 Ay', price: 800 },
+    { months: 3, label: '3 Ay', price: 2160, discount: '10% İndirim', originalPrice: 2400 },
+    { months: 6, label: '6 Ay', price: 4080, discount: '15% İndirim', originalPrice: 4800 },
+    { months: 12, label: '1 Yıl', price: 7680, discount: '20% İndirim', originalPrice: 9600 },
+  ];
 
   useFocusEffect(
     useCallback(() => {
@@ -523,28 +532,8 @@ export default function ProfileScreen() {
     }
 
     if (!hasActiveSubscription) {
-      // Ödeme yapılmamış - ödeme ekranına yönlendir
-      const pendingBusinessOwner = await AsyncStorage.getItem('pendingBusinessOwner');
-      const userEmail = user?.email || '';
-      const userName = user?.displayName || userEmail.split('@')[0] || '';
-      
-      let email = userEmail;
-      let name = userName;
-      
-      if (pendingBusinessOwner) {
-        const parsed = JSON.parse(pendingBusinessOwner);
-        email = parsed.email || email;
-        name = parsed.name || name;
-      }
-      
-      router.push({
-        pathname: '/payment',
-        params: {
-          email,
-          name,
-          userType: 'business'
-        }
-      });
+      // Ödeme yapılmamış - abonelik süresi seçim modalını aç
+      setShowPlanModal(true);
       return;
     }
 
@@ -1143,7 +1132,7 @@ export default function ProfileScreen() {
           {subscriptionInfo?.paymentStatus !== 'active' && (
             <TouchableOpacity 
               style={styles.subscriptionButton}
-              onPress={() => router.push('/payment')}
+              onPress={() => setShowPlanModal(true)}
             >
               <IconSymbol name="creditcard.fill" size={16} color="#fff" />
               <Text style={styles.subscriptionButtonText}>Abonelik Satın Al</Text>
@@ -1234,7 +1223,7 @@ export default function ProfileScreen() {
               </Text>
               <TouchableOpacity 
                 style={styles.subscriptionRequiredButton}
-                onPress={() => router.push('/payment')}
+                onPress={() => setShowPlanModal(true)}
               >
                 <Text style={styles.subscriptionRequiredButtonText}>Abonelik Satın Al</Text>
               </TouchableOpacity>
@@ -1513,6 +1502,85 @@ export default function ProfileScreen() {
           <Text style={styles.logoutButtonText}>Çıkış Yap</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Abonelik Planı Seçim Modal */}
+      <Modal
+        visible={showPlanModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowPlanModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Abonelik Süresi Seçin</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowPlanModal(false)}
+              >
+                <IconSymbol name="xmark" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.plansContainer}>
+              {subscriptionPlans.map((plan) => (
+                <TouchableOpacity
+                  key={plan.months}
+                  style={styles.planCard}
+                  onPress={() => {
+                    setShowPlanModal(false);
+                    const pendingBusinessOwner = AsyncStorage.getItem('pendingBusinessOwner').then((pending) => {
+                      const userEmail = user?.email || '';
+                      const userName = user?.displayName || userEmail.split('@')[0] || '';
+                      
+                      let email = userEmail;
+                      let name = userName;
+                      
+                      if (pending) {
+                        const parsed = JSON.parse(pending);
+                        email = parsed.email || email;
+                        name = parsed.name || name;
+                      }
+                      
+                      router.push({
+                        pathname: '/payment',
+                        params: {
+                          email,
+                          name,
+                          userType: 'business',
+                          duration: plan.months.toString()
+                        }
+                      });
+                    });
+                  }}
+                >
+                  <View style={styles.planHeader}>
+                    <Text style={styles.planLabel}>{plan.label}</Text>
+                    {plan.discount && (
+                      <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>{plan.discount}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.planPriceContainer}>
+                    {plan.originalPrice && (
+                      <Text style={styles.planOriginalPrice}>
+                        {plan.originalPrice.toFixed(2)} ₺
+                      </Text>
+                    )}
+                    <Text style={styles.planPrice}>{plan.price.toFixed(2)} ₺</Text>
+                  </View>
+                  {plan.months > 1 && (
+                    <Text style={styles.planMonthlyPrice}>
+                      Aylık: {(plan.price / plan.months).toFixed(2)} ₺
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
       </ScrollView>
     </AnimatedTabScreen>
   );
@@ -2299,5 +2367,90 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '80%',
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plansContainer: {
+    padding: 20,
+  },
+  planCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+  },
+  planHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  planLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  discountBadge: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  discountText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  planPriceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  planOriginalPrice: {
+    fontSize: 14,
+    color: '#94a3b8',
+    textDecorationLine: 'line-through',
+    marginRight: 8,
+  },
+  planPrice: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  planMonthlyPrice: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
   },
 });

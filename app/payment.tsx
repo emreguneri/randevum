@@ -41,7 +41,8 @@ export default function PaymentScreen() {
     return basePrice;
   };
 
-  const selectedPrice = isExtend ? getPriceForDuration(durationMonths) : MONTHLY_FEE;
+  const isUpgrade = userType === 'business';
+  const selectedPrice = (isExtend || isUpgrade) ? getPriceForDuration(durationMonths) : MONTHLY_FEE;
 
   const formatCardNumber = (text: string) => {
     // Sadece rakamları al
@@ -188,9 +189,9 @@ export default function PaymentScreen() {
         newEndDate.setMonth(newEndDate.getMonth() + durationMonths);
         subscriptionEndDate = newEndDate.toISOString();
       } else {
-        // Yeni abonelik: şu anki tarihten itibaren seçilen süre kadar
+        // Yeni abonelik (upgrade veya normal): şu anki tarihten itibaren seçilen süre kadar
         const newEndDate = new Date();
-        newEndDate.setMonth(newEndDate.getMonth() + (isExtend ? durationMonths : 1));
+        newEndDate.setMonth(newEndDate.getMonth() + ((isExtend || isUpgrade) ? durationMonths : 1));
         subscriptionEndDate = newEndDate.toISOString();
       }
 
@@ -200,7 +201,7 @@ export default function PaymentScreen() {
           {
             role: 'admin',
             subscriptionStatus: 'active',
-            subscriptionPlan: 'business-monthly',
+            subscriptionPlan: (isExtend || isUpgrade) ? `business-${durationMonths}month` : 'business-monthly',
             subscriptionProvider: 'iyzico',
             subscriptionEndsAt: subscriptionEndDate,
             subscriptionStartedAt: serverTimestamp(),
@@ -271,10 +272,10 @@ export default function PaymentScreen() {
             <View style={styles.pricingHeader}>
               <IconSymbol name="building.2.fill" size={48} color="#dc2626" />
               <Text style={styles.pricingTitle}>
-                {isExtend ? 'Abonelik Uzatma' : 'İşletme Sahibi Üyeliği'}
+                {isExtend ? 'Abonelik Uzatma' : isUpgrade ? 'İşletme Sahibi Ol' : 'İşletme Sahibi Üyeliği'}
               </Text>
               <Text style={styles.pricingSubtitle}>
-                {isExtend 
+                {(isExtend || isUpgrade) && durationMonths > 1
                   ? `${durationMonths} ${durationMonths === 1 ? 'Ay' : 'Ay'} Abonelik`
                   : 'Aylık Abonelik'}
               </Text>
@@ -283,7 +284,7 @@ export default function PaymentScreen() {
               <Text style={styles.priceAmount}>{selectedPrice.toFixed(2)}</Text>
               <Text style={styles.priceCurrency}>₺</Text>
             </View>
-            {isExtend && durationMonths > 1 && (
+            {((isExtend || isUpgrade) && durationMonths > 1) && (
               <View style={styles.discountBadge}>
                 <Text style={styles.discountText}>
                   {durationMonths >= 12 ? '20%' : durationMonths >= 6 ? '15%' : '10%'} İndirim
@@ -409,7 +410,7 @@ export default function PaymentScreen() {
               disabled={loading}
             >
               <Text style={styles.payButtonText}>
-                {loading ? 'İşleniyor...' : `${MONTHLY_FEE.toFixed(2)} ₺ Öde`}
+                {loading ? 'İşleniyor...' : `${selectedPrice.toFixed(2)} ₺ Öde`}
               </Text>
             </TouchableOpacity>
 
