@@ -376,7 +376,12 @@ function PaymentPageContent() {
                 disabled={loading}
                 className="flex-1 rounded-lg bg-gradient-to-r from-amber-900 to-slate-900 px-6 py-3 font-semibold text-white shadow-lg shadow-amber-900/50 transition hover:from-amber-950 hover:to-black disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "İşleniyor..." : `${MONTHLY_FEE} ₺ Öde`}
+                {loading 
+                  ? "İşleniyor..." 
+                  : isExtend 
+                    ? `${selectedPrice.toFixed(2)} ₺ Öde` 
+                    : `${MONTHLY_FEE.toFixed(2)} ₺ Öde`
+                }
               </button>
             </div>
           </form>
