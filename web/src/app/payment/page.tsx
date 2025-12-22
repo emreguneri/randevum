@@ -2,16 +2,28 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 const MONTHLY_FEE = 99.99;
 
+// Süre bazlı fiyatlandırma (indirimli)
+const getPriceForDuration = (months: number): number => {
+  const basePrice = MONTHLY_FEE * months;
+  if (months >= 12) return basePrice * 0.8; // 20% indirim
+  if (months >= 6) return basePrice * 0.85; // 15% indirim
+  if (months >= 3) return basePrice * 0.9; // 10% indirim
+  return basePrice;
+};
+
 export default function PaymentPage() {
   const { user, loading: authLoading, refreshProfile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isExtend = searchParams.get("extend") === "true";
+  const durationMonths = searchParams.get("duration") ? parseInt(searchParams.get("duration") as string, 10) : 1;
   const [cardNumber, setCardNumber] = useState("");
   const [cardHolder, setCardHolder] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
@@ -21,6 +33,9 @@ export default function PaymentPage() {
   const [identityNumber, setIdentityNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentSubscriptionEnd, setCurrentSubscriptionEnd] = useState<Date | null>(null);
+  
+  const selectedPrice = isExtend ? getPriceForDuration(durationMonths) : MONTHLY_FEE;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -29,8 +44,29 @@ export default function PaymentPage() {
     }
     if (user) {
       setContactName(user.displayName || user.email?.split("@")[0] || "");
+      
+      // Eğer extend modundaysa, mevcut abonelik bitiş tarihini yükle
+      if (isExtend && user.uid) {
+        const loadCurrentSubscription = async () => {
+          try {
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              if (userData.subscriptionEndsAt) {
+                const endDate = userData.subscriptionEndsAt?.toDate 
+                  ? userData.subscriptionEndsAt.toDate() 
+                  : new Date(userData.subscriptionEndsAt);
+                setCurrentSubscriptionEnd(endDate);
+              }
+            }
+          } catch (error) {
+            console.error("[Payment] Error loading current subscription:", error);
+          }
+        };
+        loadCurrentSubscription();
+      }
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user, router, isExtend]);
 
   const formatCardNumber = (text: string) => {
     const cleaned = text.replace(/\D/g, "");
@@ -133,7 +169,18 @@ export default function PaymentPage() {
       }
 
       const subscriptionData = data.data;
-      const subscriptionEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      
+      // Abonelik bitiş tarihini hesapla
+      let subscriptionEndDate: Date;
+      if (isExtend && currentSubscriptionEnd) {
+        // Mevcut aboneliği uzat
+        subscriptionEndDate = new Date(currentSubscriptionEnd);
+        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + durationMonths);
+      } else {
+        // Yeni abonelik veya uzatma (mevcut tarih yoksa)
+        subscriptionEndDate = new Date();
+        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + (isExtend ? durationMonths : 1));
+      }
 
       if (user?.uid) {
         await setDoc(
@@ -141,9 +188,9 @@ export default function PaymentPage() {
           {
             role: "admin",
             subscriptionStatus: "active",
-            subscriptionPlan: "business-monthly",
+            subscriptionPlan: isExtend ? `business-${durationMonths}month` : "business-monthly",
             subscriptionProvider: "iyzico",
-            subscriptionEndsAt: subscriptionEndDate,
+            subscriptionEndsAt: subscriptionEndDate.toISOString(),
             subscriptionStartedAt: serverTimestamp(),
             iyzico: {
               customerReferenceCode: subscriptionData.customerReferenceCode,
@@ -160,8 +207,13 @@ export default function PaymentPage() {
       await refreshProfile();
 
       // Başarılı mesajı göster ve yönlendir
-      alert("Ödeme Başarılı! İşletme sahibi hesabınız aktif edildi. Artık mekanınızı ekleyebilirsiniz.");
-      router.push("/dashboard/shop");
+      if (isExtend) {
+        alert(`Ödeme Başarılı! Aboneliğiniz ${durationMonths} ${durationMonths === 1 ? "ay" : "ay"} uzatıldı.`);
+        router.push("/profile");
+      } else {
+        alert("Ödeme Başarılı! İşletme sahibi hesabınız aktif edildi. Artık mekanınızı ekleyebilirsiniz.");
+        router.push("/dashboard/shop");
+      }
     } catch (err: any) {
       console.error("Payment error:", err);
       setError(err?.message || "Ödeme işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.");
@@ -183,9 +235,25 @@ export default function PaymentPage() {
       <div className="mx-auto max-w-2xl">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white">İşletme Sahibi Ödeme</h1>
+            <h1 className="text-3xl font-bold text-white">
+              {isExtend ? "Aboneliği Uzat" : "İşletme Sahibi Ödeme"}
+            </h1>
             <p className="mt-2 text-slate-300">
-              Aylık abonelik ücreti: <span className="font-semibold text-white">{MONTHLY_FEE} ₺</span>
+              {isExtend ? (
+                <>
+                  {durationMonths} {durationMonths === 1 ? "Ay" : "Ay"} abonelik ücreti:{" "}
+                  <span className="font-semibold text-white">{selectedPrice.toFixed(2)} ₺</span>
+                  {durationMonths > 1 && (
+                    <span className="ml-2 text-emerald-400">
+                      ({durationMonths >= 12 ? "20%" : durationMonths >= 6 ? "15%" : "10%"} İndirim)
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  Aylık abonelik ücreti: <span className="font-semibold text-white">{MONTHLY_FEE} ₺</span>
+                </>
+              )}
             </p>
           </div>
 

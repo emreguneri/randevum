@@ -35,6 +35,15 @@ export default function ProfilePage() {
     totalRevenue: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [showExtendModal, setShowExtendModal] = useState(false);
+
+  // Abonelik süre seçenekleri
+  const subscriptionPlans = [
+    { months: 1, label: "1 Ay", price: 99.99 },
+    { months: 3, label: "3 Ay", price: 269.97, discount: "10% İndirim", originalPrice: 299.97 },
+    { months: 6, label: "6 Ay", price: 509.94, discount: "15% İndirim", originalPrice: 599.94 },
+    { months: 12, label: "1 Yıl", price: 959.88, discount: "20% İndirim", originalPrice: 1199.88 },
+  ];
 
   // Yönlendirme kontrolü
   useEffect(() => {
@@ -316,6 +325,23 @@ export default function ProfilePage() {
                     }
                   </p>
                 </div>
+              </div>
+            )}
+
+            {user.subscriptionStatus === "active" && (
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={() => setShowExtendModal(true)}
+                  className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                >
+                  ➕ Aboneliği Uzat
+                </button>
+                <Link
+                  href="/payment?renew=true"
+                  className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                >
+                  🔄 Aboneliği Yenile
+                </Link>
               </div>
             )}
 
