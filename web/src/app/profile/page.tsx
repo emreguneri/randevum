@@ -571,6 +571,58 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Abonelik Uzatma Modal */}
+      {showExtendModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
+          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Abonelik Süresi Seçin</h2>
+              <button
+                onClick={() => setShowExtendModal(false)}
+                className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {subscriptionPlans.map((plan) => (
+                <button
+                  key={plan.months}
+                  onClick={() => {
+                    setShowExtendModal(false);
+                    router.push(`/payment?extend=true&duration=${plan.months}`);
+                  }}
+                  className="rounded-xl border-2 border-white/10 bg-white/5 p-6 text-left transition hover:border-fuchsia-500/50 hover:bg-white/10"
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-lg font-semibold text-white">{plan.label}</span>
+                    {plan.discount && (
+                      <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-300">
+                        {plan.discount}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mb-2 flex items-baseline gap-2">
+                    {plan.originalPrice && (
+                      <span className="text-sm text-slate-400 line-through">
+                        {plan.originalPrice.toFixed(2)} ₺
+                      </span>
+                    )}
+                    <span className="text-2xl font-bold text-white">{plan.price.toFixed(2)} ₺</span>
+                  </div>
+                  {plan.months > 1 && (
+                    <p className="text-sm text-slate-400">
+                      Aylık: {(plan.price / plan.months).toFixed(2)} ₺
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
