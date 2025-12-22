@@ -30,7 +30,7 @@ export default function PaymentScreen() {
   const [currentSubscriptionEnd, setCurrentSubscriptionEnd] = useState<Date | null>(null);
 
   // Aylık abonelik ücreti
-  const MONTHLY_FEE = 99.99;
+  const MONTHLY_FEE = 800;
   
   // Süre bazlı fiyatlandırma (indirimli)
   const getPriceForDuration = (months: number): number => {

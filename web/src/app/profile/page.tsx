@@ -39,10 +39,10 @@ export default function ProfilePage() {
 
   // Abonelik süre seçenekleri
   const subscriptionPlans = [
-    { months: 1, label: "1 Ay", price: 99.99 },
-    { months: 3, label: "3 Ay", price: 269.97, discount: "10% İndirim", originalPrice: 299.97 },
-    { months: 6, label: "6 Ay", price: 509.94, discount: "15% İndirim", originalPrice: 599.94 },
-    { months: 12, label: "1 Yıl", price: 959.88, discount: "20% İndirim", originalPrice: 1199.88 },
+    { months: 1, label: "1 Ay", price: 800 },
+    { months: 3, label: "3 Ay", price: 2160, discount: "10% İndirim", originalPrice: 2400 },
+    { months: 6, label: "6 Ay", price: 4080, discount: "15% İndirim", originalPrice: 4800 },
+    { months: 12, label: "1 Yıl", price: 7680, discount: "20% İndirim", originalPrice: 9600 },
   ];
 
   // Yönlendirme kontrolü

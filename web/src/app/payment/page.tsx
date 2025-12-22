@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
-const MONTHLY_FEE = 99.99;
+const MONTHLY_FEE = 800;
 
 // Süre bazlı fiyatlandırma (indirimli)
 const getPriceForDuration = (months: number): number => {
