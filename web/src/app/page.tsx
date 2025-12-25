@@ -2,7 +2,6 @@
 
 import { BookingForm } from "@/components/booking-form";
 import { ContactForm } from "@/components/contact-form";
-import { ShopsShowcase } from "@/components/shops-showcase";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import Link from "next/link";
@@ -1143,7 +1142,6 @@ export default function Home() {
           </div>
         </section>
 
-        <ShopsShowcase />
 
         <section id="pricing" className="mx-auto max-w-6xl px-6 pb-24 lg:px-8">
           <div className="text-center">
