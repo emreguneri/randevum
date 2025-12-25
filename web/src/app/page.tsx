@@ -112,9 +112,9 @@ const coreFeatures = [
 const plans = [
   {
     name: "Başlangıç",
-    price: "₺0",
+    price: "₺800",
     description: "1 personelli işletmeler için temel randevu yönetimi.",
-    cta: "Ücretsiz Başlat",
+    cta: "7 Gün Ücretsiz Dene",
     features: [
       "Tek şube ve tek personel",
       "Takvim ve randevu hatırlatma",
