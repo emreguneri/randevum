@@ -113,22 +113,13 @@ const plans = [
   {
     name: "Başlangıç",
     price: "₺800",
-    description: "1 personelli işletmeler için temel randevu yönetimi.",
-    cta: "7 Gün Ücretsiz Dene",
-    features: [
-      "Tek şube ve tek personel",
-      "Takvim ve randevu hatırlatma",
-      "Sınırsız müşteri kaydı",
-    ],
-  },
-  {
-    name: "Profesyonel",
-    price: "₺800",
-    description: "Büyüyen işletmelere özel gelişmiş operasyon yönetimi.",
+    description: "Tüm işletmeler için kapsamlı randevu ve operasyon yönetimi.",
     cta: "7 Gün Ücretsiz Dene",
     highlighted: true,
     features: [
       "Sınırsız personel ve hizmet",
+      "Sınırsız müşteri kaydı",
+      "Takvim ve randevu hatırlatma",
       "Gelir gider raporlaması",
       "Öncelikli destek",
       "iyzico ile abonelik tahsilatı",
