@@ -123,7 +123,7 @@ const plans = [
   },
   {
     name: "Profesyonel",
-    price: "₺499",
+    price: "₺800",
     description: "Büyüyen işletmelere özel gelişmiş operasyon yönetimi.",
     cta: "7 Gün Ücretsiz Dene",
     highlighted: true,
