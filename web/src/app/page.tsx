@@ -181,6 +181,13 @@ const faqs = [
 ];
 
 export default function Home() {
+  // Chart heights - client-side only to avoid hydration mismatch
+  const [chartHeights, setChartHeights] = useState<number[]>([]);
+
+  useEffect(() => {
+    // Generate random heights only on client-side
+    setChartHeights(Array.from({ length: 7 }, () => 30 + Math.random() * 50));
+  }, []);
   return (
     <div className="relative min-h-screen overflow-hidden text-slate-50" style={{ backgroundColor: '#0a0505' }}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_-10%,rgba(101,20,20,0.15),transparent_45%),radial-gradient(circle_at_80%_-20%,rgba(50,10,10,0.12),transparent_55%)]" />
@@ -525,7 +532,11 @@ export default function Home() {
                                 {Array.from({ length: 7 }).map((_, i) => (
                                   <div
                                     key={i}
-                                    className="flex-1 rounded-t" style={{ background: 'linear-gradient(to top, rgba(45, 10, 10, 0.4), rgba(61, 10, 10, 0.2))', height: `${30 + Math.random() * 50}%` }}
+                                    className="flex-1 rounded-t" 
+                                    style={{ 
+                                      background: 'linear-gradient(to top, rgba(45, 10, 10, 0.4), rgba(61, 10, 10, 0.2))', 
+                                      height: chartHeights[i] ? `${chartHeights[i]}%` : '40%' 
+                                    }}
                                   />
                                 ))}
                               </div>
