@@ -1,0 +1,11 @@
+Yeni Özellikler:
+- Müşteriler artık 1, 3, 6 veya 12 aylık abonelik seçebilir
+- Uzun süreli aboneliklerde özel indirimler (10%, 15%, 20%)
+- Abonelik uzatma özelliği eklendi
+- Aylık abonelik ücreti 800 TL olarak güncellendi
+
+İyileştirmeler:
+- Performans iyileştirmeleri
+- Kullanıcı deneyimi iyileştirmeleri
+- Hata düzeltmeleri
+

@@ -20,7 +20,7 @@ Randevum platformu için yaptığımız başvuru kapsamında, iş modelimiz hakk
 **A) İşletme Sahipleri (B2B):**
 - Platforma kayıt olan işletme sahipleri, randevu yönetim sistemi kullanmak için **abonelik ücreti** öderler
 - Abonelik modeli: Aylık, üç aylık veya yıllık abonelik paketleri
-- Abonelik ücretleri: Aylık 99.99 TL - 499 TL arası (paket türüne göre)
+- Abonelik ücretleri: Aylık 800 TL (3, 6, 12 aylık paketlerde indirimli: 2,160 TL, 4,080 TL, 7,680 TL)
 - Ödeme sıklığı: Düzenli abonelik ödemeleri (recurring payments)
 
 **B) Müşteriler (B2C - End Users):**
@@ -37,7 +37,7 @@ Iyzico POS entegrasyonu ile işleyeceğimiz ödemeler:
 - **Ödeme Türü:** Abonelik ödemeleri (Subscription/Recurring Payments)
 - **Ödeme Yapan:** İşletme sahipleri (berber, kuaför, güzellik salonu sahipleri vb.)
 - **Ödeme Amacı:** Randevu yönetim platformu kullanım hakkı
-- **Ödeme Tutarı:** Aylık 99.99 TL - 499 TL arası (paket seviyesine göre)
+- **Ödeme Tutarı:** Aylık 800 TL (3, 6, 12 aylık paketlerde indirimli: 2,160 TL, 4,080 TL, 7,680 TL)
 - **Ödeme Sıklığı:** Aylık, üç aylık veya yıllık (müşteri tercihine göre)
 - **Ödeme Yöntemi:** Kredi kartı ile otomatik yenilenen abonelik ödemeleri
 
@@ -70,7 +70,7 @@ Iyzico POS entegrasyonu ile işleyeceğimiz ödemeler:
 
 **İşlem Türü:** E-ticaret / SaaS Abonelik Ödemeleri  
 **İşlem Kategorisi:** Dijital hizmet aboneliği  
-**İşlem Tutarı:** 99.99 TL - 499 TL (paket bazlı)  
+**İşlem Tutarı:** 800 TL (3, 6, 12 aylık paketlerde indirimli: 2,160 TL, 4,080 TL, 7,680 TL)  
 **İşlem Sıklığı:** Aylık, üç aylık veya yıllık  
 **Ödeme Yöntemi:** Kredi kartı (Visa, MasterCard)  
 **3D Secure:** Evet, tüm ödemelerde aktif  

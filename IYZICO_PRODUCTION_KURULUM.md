@@ -58,7 +58,7 @@ Production ortamında ürün ve plan referans kodlarını oluşturmanız gerekeb
 1. Oluşturduğunuz ürünün altında **"Yeni Plan"** (New Plan) butonuna tıklayın
 2. Plan bilgilerini girin:
    - **Plan Adı:** "Randevum Aylık Plan"
-   - **Fiyat:** 99.99 TL
+   - **Fiyat:** 800 TL
    - **Ödeme Aralığı:** Aylık (MONTHLY)
    - **Para Birimi:** TRY
 3. Planı kaydedin ve **"Plan Referans Kodu"** (Pricing Plan Reference Code) değerini not edin

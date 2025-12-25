@@ -138,7 +138,7 @@ Tarayıcıda `http://localhost:3000/payment` adresine gidin
 
 ### Adım 5: Ödeme Yapın
 
-1. **"99.99 ₺ Öde"** butonuna tıklayın
+1. **"800 ₺ Öde"** butonuna tıklayın
 2. İşlem işlenirken **"İşleniyor..."** mesajı görünecek
 3. Başarılı olursa:
    - **"Ödeme Başarılı!"** alert mesajı görünecek

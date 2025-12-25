@@ -4,7 +4,7 @@ const iyzipayClient = require('../config/iyzico');
 const DEFAULT_CALLBACK_URL = process.env.IYZICO_CALLBACK_URL || 'https://example.com/iyzico/callback';
 const DEFAULT_PRODUCT_NAME = process.env.IYZICO_PRODUCT_NAME || 'Randevum İşletme Üyeliği';
 const DEFAULT_PLAN_NAME = process.env.IYZICO_PLAN_NAME || 'Randevum Aylık Plan';
-const DEFAULT_PLAN_PRICE = process.env.IYZICO_PLAN_PRICE || '99.99';
+const DEFAULT_PLAN_PRICE = process.env.IYZICO_PLAN_PRICE || '800';
 
 let cachedProductReferenceCode = process.env.IYZICO_PRODUCT_CODE || null;
 let cachedPlanReferenceCode = process.env.IYZICO_PLAN_CODE || null;
