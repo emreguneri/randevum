@@ -84,13 +84,17 @@ export function Navbar() {
             >
               Profilim
             </button>
+            {/* Dropdown ile button arasındaki boşluğu kapatmak için görünmez bridge */}
+            <div className="absolute right-0 top-full h-3 w-full" />
             <div
               ref={dropdownRef}
-              className={`absolute right-0 top-full z-[10000] mt-3 w-64 origin-top rounded-2xl border border-white/20 bg-slate-950/98 p-4 text-sm text-slate-100 shadow-2xl shadow-black/50 backdrop-blur-xl transition-all duration-200 ${
+              className={`absolute right-0 top-full z-[10000] mt-0 w-64 origin-top rounded-2xl border border-white/20 bg-slate-950/98 p-4 text-sm text-slate-100 shadow-2xl shadow-black/50 backdrop-blur-xl transition-all duration-200 ${
                 isDropdownOpen
                   ? "visible translate-y-0 opacity-100 scale-100"
                   : "invisible -translate-y-2 opacity-0 scale-95 pointer-events-none"
               }`}
+              onMouseEnter={() => setIsDropdownOpen(true)}
+              onMouseLeave={() => setIsDropdownOpen(false)}
             >
               {/* Profil Özeti */}
               <div className="mb-3 border-b border-white/10 pb-3">
