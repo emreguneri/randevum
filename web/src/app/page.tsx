@@ -2,6 +2,7 @@
 
 import { BookingForm } from "@/components/booking-form";
 import { ContactForm } from "@/components/contact-form";
+import { ShopsShowcase } from "@/components/shops-showcase";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import Link from "next/link";
@@ -111,14 +112,23 @@ const coreFeatures = [
 const plans = [
   {
     name: "Başlangıç",
-    price: "₺800",
-    description: "Tüm işletmeler için kapsamlı randevu ve operasyon yönetimi.",
+    price: "₺0",
+    description: "1 personelli işletmeler için temel randevu yönetimi.",
+    cta: "Ücretsiz Başlat",
+    features: [
+      "Tek şube ve tek personel",
+      "Takvim ve randevu hatırlatma",
+      "Sınırsız müşteri kaydı",
+    ],
+  },
+  {
+    name: "Profesyonel",
+    price: "₺499",
+    description: "Büyüyen işletmelere özel gelişmiş operasyon yönetimi.",
     cta: "7 Gün Ücretsiz Dene",
     highlighted: true,
     features: [
       "Sınırsız personel ve hizmet",
-      "Sınırsız müşteri kaydı",
-      "Takvim ve randevu hatırlatma",
       "Gelir gider raporlaması",
       "Öncelikli destek",
       "iyzico ile abonelik tahsilatı",
@@ -171,13 +181,6 @@ const faqs = [
 ];
 
 export default function Home() {
-  // Chart heights - client-side only to avoid hydration mismatch
-  const [chartHeights, setChartHeights] = useState<number[]>([]);
-
-  useEffect(() => {
-    // Generate random heights only on client-side
-    setChartHeights(Array.from({ length: 7 }, () => 30 + Math.random() * 50));
-  }, []);
   return (
     <div className="relative min-h-screen overflow-hidden text-slate-50" style={{ backgroundColor: '#0a0505' }}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_-10%,rgba(101,20,20,0.15),transparent_45%),radial-gradient(circle_at_80%_-20%,rgba(50,10,10,0.12),transparent_55%)]" />
@@ -522,11 +525,7 @@ export default function Home() {
                                 {Array.from({ length: 7 }).map((_, i) => (
                                   <div
                                     key={i}
-                                    className="flex-1 rounded-t" 
-                                    style={{ 
-                                      background: 'linear-gradient(to top, rgba(45, 10, 10, 0.4), rgba(61, 10, 10, 0.2))', 
-                                      height: chartHeights[i] ? `${chartHeights[i]}%` : '40%' 
-                                    }}
+                                    className="flex-1 rounded-t" style={{ background: 'linear-gradient(to top, rgba(45, 10, 10, 0.4), rgba(61, 10, 10, 0.2))', height: `${30 + Math.random() * 50}%` }}
                                   />
                                 ))}
                               </div>
@@ -1142,6 +1141,7 @@ export default function Home() {
           </div>
         </section>
 
+        <ShopsShowcase />
 
         <section id="pricing" className="mx-auto max-w-6xl px-6 pb-24 lg:px-8">
           <div className="text-center">

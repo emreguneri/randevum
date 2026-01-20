@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { iapService, getSubscriptionIdForDuration } from '@/services/iapService';
 
 const BACKEND_API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:4000';
 
@@ -28,6 +29,8 @@ export default function PaymentScreen() {
   const [identityNumber, setIdentityNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentSubscriptionEnd, setCurrentSubscriptionEnd] = useState<Date | null>(null);
+  const [iapAvailable, setIapAvailable] = useState(false);
+  const [iapInitialized, setIapInitialized] = useState(false);
 
   // Aylık abonelik ücreti
   const MONTHLY_FEE = 800;
@@ -107,7 +110,143 @@ export default function PaymentScreen() {
     loadPendingInfo();
   }, [contactName, contactPhone, user?.phoneNumber, isExtend, user?.uid]);
 
-  const handlePayment = async () => {
+  // IAP'ı başlat (sadece iOS)
+  useEffect(() => {
+    const initIAP = async () => {
+      if (Platform.OS === 'ios') {
+        try {
+          const initialized = await iapService.initialize();
+          setIapInitialized(initialized);
+          setIapAvailable(initialized);
+        } catch (error) {
+          console.error('[Payment] IAP başlatılamadı:', error);
+          setIapAvailable(false);
+        }
+      }
+    };
+
+    initIAP();
+
+    // Cleanup
+    return () => {
+      if (Platform.OS === 'ios' && iapInitialized) {
+        iapService.disconnect();
+      }
+    };
+  }, []);
+
+  // iOS IAP ile ödeme
+  const handleIAPPayment = async () => {
+    if (!iapAvailable || !iapInitialized) {
+      Alert.alert('Hata', 'IAP şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const subscriptionId = getSubscriptionIdForDuration(durationMonths);
+
+      await iapService.purchaseSubscription(
+        subscriptionId,
+        async (purchase) => {
+          try {
+            // Receipt'i backend'e gönder ve doğrula
+            const receiptData = purchase.transactionReceipt || purchase.receipt;
+            if (!receiptData) {
+              throw new Error('Receipt data bulunamadı');
+            }
+
+            const response = await axios.post(`${BACKEND_API_URL}/api/payments/apple/validate-receipt`, {
+              receiptData,
+              userId: user?.uid,
+              durationMonths,
+            });
+
+            if (response.data.status !== 'success') {
+              throw new Error(response.data.message || 'Receipt doğrulaması başarısız');
+            }
+
+            const { subscriptionEndDate, subscriptionInfo } = response.data.data;
+
+            // Firestore'da kullanıcı bilgilerini güncelle
+            if (user?.uid) {
+              let finalEndDate = subscriptionEndDate;
+              
+              // Eğer extend modundaysa, mevcut bitiş tarihine ekle
+              if (isExtend && currentSubscriptionEnd) {
+                const newEndDate = new Date(currentSubscriptionEnd);
+                newEndDate.setMonth(newEndDate.getMonth() + durationMonths);
+                finalEndDate = newEndDate.toISOString();
+              }
+
+              await setDoc(
+                doc(db, 'users', user.uid),
+                {
+                  role: 'admin',
+                  subscriptionStatus: 'active',
+                  subscriptionPlan: `business-${durationMonths}month`,
+                  subscriptionProvider: 'apple',
+                  subscriptionEndsAt: finalEndDate,
+                  subscriptionStartedAt: serverTimestamp(),
+                  apple: {
+                    productId: subscriptionInfo.productId,
+                    transactionId: subscriptionInfo.transactionId,
+                    originalTransactionId: subscriptionInfo.originalTransactionId,
+                  },
+                },
+                { merge: true }
+              );
+            }
+
+            // Transaction'ı tamamla
+            await iapService.finishTransaction(purchase);
+
+            const businessInfo = {
+              email: email || user?.email,
+              name: contactName,
+              userType: 'business',
+              paymentStatus: 'active',
+              subscriptionStartDate: new Date().toISOString(),
+              subscriptionEndDate: subscriptionEndDate,
+            };
+
+            await AsyncStorage.setItem('businessOwner', JSON.stringify(businessInfo));
+            await AsyncStorage.setItem('userType', 'business');
+            await AsyncStorage.removeItem('pendingBusinessOwner');
+
+            Alert.alert(
+              'Ödeme Başarılı!',
+              'İşletme sahibi hesabınız aktif edildi. Artık mekanınızı ekleyebilirsiniz.',
+              [
+                {
+                  text: 'Tamam',
+                  onPress: () => router.replace('/(tabs)/profile')
+                }
+              ]
+            );
+          } catch (error: any) {
+            console.error('[Payment] IAP işleme hatası:', error);
+            Alert.alert('Ödeme Hatası', error?.message || 'Ödeme işlemi sırasında bir hata oluştu.');
+          } finally {
+            setLoading(false);
+          }
+        },
+        (error) => {
+          console.error('[Payment] IAP satın alma hatası:', error);
+          Alert.alert('Ödeme Hatası', error?.message || 'Satın alma işlemi başarısız oldu.');
+          setLoading(false);
+        }
+      );
+    } catch (error: any) {
+      console.error('[Payment] IAP hatası:', error);
+      Alert.alert('Ödeme Hatası', error?.message || 'Ödeme işlemi başarısız oldu.');
+      setLoading(false);
+    }
+  };
+
+  // Iyzico ile ödeme (Android/Web)
+  const handleIyzicoPayment = async () => {
     if (!cardNumber.trim() || !cardHolder.trim() || !expiryDate.trim() || !cvv.trim()) {
       Alert.alert('Hata', 'Lütfen tüm kart bilgilerini doldurunuz.');
       return;
@@ -247,6 +386,15 @@ export default function PaymentScreen() {
     }
   };
 
+  // Platform'a göre ödeme yöntemini seç
+  const handlePayment = async () => {
+    if (Platform.OS === 'ios' && iapAvailable && iapInitialized) {
+      await handleIAPPayment();
+    } else {
+      await handleIyzicoPayment();
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -348,9 +496,11 @@ export default function PaymentScreen() {
               />
             </View>
 
-            <Text style={styles.sectionTitle}>Kart Bilgileri</Text>
+            {Platform.OS !== 'ios' || !iapAvailable ? (
+              <>
+                <Text style={styles.sectionTitle}>Kart Bilgileri</Text>
 
-            <View style={styles.inputContainer}>
+                <View style={styles.inputContainer}>
               <IconSymbol name="creditcard" size={20} color="#64748b" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
@@ -403,6 +553,15 @@ export default function PaymentScreen() {
                 />
               </View>
             </View>
+              </>
+            ) : (
+              <View style={styles.iapNotice}>
+                <IconSymbol name="info.circle.fill" size={24} color="#3b82f6" />
+                <Text style={styles.iapNoticeText}>
+                  iOS cihazınızda App Store üzerinden ödeme yapabilirsiniz. Kart bilgileri gerekmez.
+                </Text>
+              </View>
+            )}
 
             <TouchableOpacity
               style={[styles.payButton, loading && styles.payButtonDisabled]}
@@ -410,9 +569,22 @@ export default function PaymentScreen() {
               disabled={loading}
             >
               <Text style={styles.payButtonText}>
-                {loading ? 'İşleniyor...' : `${selectedPrice.toFixed(2)} ₺ Öde`}
+                {loading 
+                  ? 'İşleniyor...' 
+                  : Platform.OS === 'ios' && iapAvailable
+                    ? 'App Store ile Öde'
+                    : `${selectedPrice.toFixed(2)} ₺ Öde`}
               </Text>
             </TouchableOpacity>
+
+            {Platform.OS === 'ios' && iapAvailable && (
+              <View style={styles.iapInfo}>
+                <IconSymbol name="apple.logo" size={16} color="#64748b" />
+                <Text style={styles.iapInfoText}>
+                  Ödeme App Store üzerinden güvenli bir şekilde işlenecektir.
+                </Text>
+              </View>
+            )}
 
             <View style={styles.securityInfo}>
               <IconSymbol name="lock.shield.fill" size={16} color="#10b981" />
@@ -618,6 +790,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#166534',
     fontWeight: '500',
+  },
+  iapInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+  },
+  iapInfoText: {
+    fontSize: 13,
+    color: '#1e40af',
+    fontWeight: '500',
+    flex: 1,
+  },
+  iapNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 16,
+    backgroundColor: '#eff6ff',
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  iapNoticeText: {
+    fontSize: 14,
+    color: '#1e40af',
+    fontWeight: '500',
+    flex: 1,
+    lineHeight: 20,
   },
 });
 

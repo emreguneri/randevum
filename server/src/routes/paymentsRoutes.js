@@ -6,6 +6,11 @@ const {
   initializeSubscription,
   normalizePhoneNumber,
 } = require('../services/iyzicoService');
+const {
+  verifyReceipt,
+  extractSubscriptionInfo,
+  isSubscriptionActive,
+} = require('../services/appleReceiptService');
 
 const router = express.Router();
 
@@ -138,6 +143,92 @@ router.post('/subscribe', async (req, res) => {
     });
   } catch (error) {
     return handleError(res, error);
+  }
+});
+
+/**
+ * Apple App Store receipt validation endpoint
+ * iOS IAP için receipt doğrulama
+ */
+router.post('/apple/validate-receipt', async (req, res) => {
+  try {
+    const { receiptData, userId, durationMonths } = req.body;
+
+    if (!receiptData) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'receiptData zorunludur',
+      });
+    }
+
+    if (!userId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'userId zorunludur',
+      });
+    }
+
+    // Receipt'i doğrula (önce production, gerekirse sandbox)
+    const validationResult = await verifyReceipt(receiptData, null, true);
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Receipt doğrulaması başarısız',
+      });
+    }
+
+    // En son receipt info'yu al (aktif abonelik)
+    const latestReceiptInfo = validationResult.latest_receipt_info;
+    if (!latestReceiptInfo || latestReceiptInfo.length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Receipt\'te abonelik bilgisi bulunamadı',
+      });
+    }
+
+    // En son transaction'ı al
+    const latestTransaction = latestReceiptInfo[latestReceiptInfo.length - 1];
+    const subscriptionInfo = extractSubscriptionInfo(latestTransaction);
+    const isActive = isSubscriptionActive(latestTransaction);
+
+    if (!isActive) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Abonelik süresi dolmuş',
+        subscriptionInfo,
+      });
+    }
+
+    // Abonelik bitiş tarihini hesapla
+    let subscriptionEndDate;
+    if (subscriptionInfo.expiresDate) {
+      subscriptionEndDate = subscriptionInfo.expiresDate.toISOString();
+    } else {
+      // Eğer expiresDate yoksa, durationMonths'a göre hesapla
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + (durationMonths || subscriptionInfo.durationMonths || 1));
+      subscriptionEndDate = endDate.toISOString();
+    }
+
+    return res.json({
+      status: 'success',
+      data: {
+        subscriptionInfo,
+        subscriptionEndDate,
+        productId: subscriptionInfo.productId,
+        transactionId: subscriptionInfo.transactionId,
+        originalTransactionId: subscriptionInfo.originalTransactionId,
+        isActive,
+        environment: validationResult.environment,
+      },
+    });
+  } catch (error) {
+    console.error('[Payments] Apple receipt validation error:', error?.message || error);
+    return res.status(400).json({
+      status: 'error',
+      message: error?.message || 'Receipt doğrulaması başarısız oldu',
+    });
   }
 });
 
