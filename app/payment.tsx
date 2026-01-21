@@ -32,20 +32,24 @@ export default function PaymentScreen() {
   const [iapAvailable, setIapAvailable] = useState(false);
   const [iapInitialized, setIapInitialized] = useState(false);
 
-  // Aylık abonelik ücreti
-  const MONTHLY_FEE = 800;
-  
-  // Süre bazlı fiyatlandırma (indirimli)
+  // Süre bazlı fiyatlandırma (App Store fiyatları)
   const getPriceForDuration = (months: number): number => {
-    const basePrice = MONTHLY_FEE * months;
-    if (months >= 12) return basePrice * 0.8; // 20% indirim
-    if (months >= 6) return basePrice * 0.85; // 15% indirim
-    if (months >= 3) return basePrice * 0.9; // 10% indirim
-    return basePrice;
+    switch (months) {
+      case 1:
+        return 799.99;
+      case 3:
+        return 2499.99;
+      case 6:
+        return 4999.99;
+      case 12:
+        return 9999.99;
+      default:
+        return 799.99;
+    }
   };
 
   const isUpgrade = userType === 'business';
-  const selectedPrice = (isExtend || isUpgrade) ? getPriceForDuration(durationMonths) : MONTHLY_FEE;
+  const selectedPrice = (isExtend || isUpgrade) ? getPriceForDuration(durationMonths) : getPriceForDuration(1);
 
   const formatCardNumber = (text: string) => {
     // Sadece rakamları al
@@ -435,7 +439,7 @@ export default function PaymentScreen() {
             {((isExtend || isUpgrade) && durationMonths > 1) && (
               <View style={styles.discountBadge}>
                 <Text style={styles.discountText}>
-                  {durationMonths >= 12 ? '20%' : durationMonths >= 6 ? '15%' : '10%'} İndirim
+                  Uzun Süreli Abonelik
                 </Text>
               </View>
             )}
@@ -460,41 +464,45 @@ export default function PaymentScreen() {
           </View>
 
           <View style={styles.paymentForm}>
-            <Text style={styles.sectionTitle}>İletişim Bilgileri</Text>
-            <View style={styles.inputContainer}>
-              <IconSymbol name="person.crop.circle" size={20} color="#64748b" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Ad Soyad"
-                placeholderTextColor="#94a3b8"
-                value={contactName}
-                onChangeText={setContactName}
-              />
-            </View>
-            <View style={styles.inputContainer}>
-              <IconSymbol name="phone.fill" size={20} color="#64748b" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Telefon (05xx xxx xx xx)"
-                placeholderTextColor="#94a3b8"
-                value={contactPhone}
-                onChangeText={setContactPhone}
-                keyboardType="phone-pad"
-                maxLength={14}
-              />
-            </View>
-            <View style={styles.inputContainer}>
-              <IconSymbol name="person.text.rectangle" size={20} color="#64748b" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="T.C. Kimlik No (opsiyonel)"
-                placeholderTextColor="#94a3b8"
-                value={identityNumber}
-                onChangeText={setIdentityNumber}
-                keyboardType="number-pad"
-                maxLength={11}
-              />
-            </View>
+            {Platform.OS !== 'ios' || !iapAvailable ? (
+              <>
+                <Text style={styles.sectionTitle}>İletişim Bilgileri</Text>
+                <View style={styles.inputContainer}>
+                  <IconSymbol name="person.crop.circle" size={20} color="#64748b" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ad Soyad"
+                    placeholderTextColor="#94a3b8"
+                    value={contactName}
+                    onChangeText={setContactName}
+                  />
+                </View>
+                <View style={styles.inputContainer}>
+                  <IconSymbol name="phone.fill" size={20} color="#64748b" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Telefon (05xx xxx xx xx)"
+                    placeholderTextColor="#94a3b8"
+                    value={contactPhone}
+                    onChangeText={setContactPhone}
+                    keyboardType="phone-pad"
+                    maxLength={14}
+                  />
+                </View>
+                <View style={styles.inputContainer}>
+                  <IconSymbol name="person.text.rectangle" size={20} color="#64748b" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="T.C. Kimlik No (opsiyonel)"
+                    placeholderTextColor="#94a3b8"
+                    value={identityNumber}
+                    onChangeText={setIdentityNumber}
+                    keyboardType="number-pad"
+                    maxLength={11}
+                  />
+                </View>
+              </>
+            ) : null}
 
             {Platform.OS !== 'ios' || !iapAvailable ? (
               <>
@@ -586,12 +594,21 @@ export default function PaymentScreen() {
               </View>
             )}
 
-            <View style={styles.securityInfo}>
-              <IconSymbol name="lock.shield.fill" size={16} color="#10b981" />
-              <Text style={styles.securityText}>
-                Ödeme bilgileriniz güvenli bir şekilde işlenmektedir.
-              </Text>
-            </View>
+            {Platform.OS !== 'ios' || !iapAvailable ? (
+              <View style={styles.securityInfo}>
+                <IconSymbol name="lock.shield.fill" size={16} color="#10b981" />
+                <Text style={styles.securityText}>
+                  Ödeme bilgileriniz güvenli bir şekilde işlenmektedir.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.securityInfo}>
+                <IconSymbol name="apple.logo" size={16} color="#10b981" />
+                <Text style={styles.securityText}>
+                  Ödeme App Store üzerinden güvenli bir şekilde işlenecektir.
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>

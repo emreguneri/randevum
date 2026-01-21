@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-native",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@arabanla-eve/shared": ["../../packages/shared/src"],
+      "@arabanla-eve/shared/*": ["../../packages/shared/src/*"]
+    }
+  },
+  "include": ["src/**/*", "app.json"]
+}
+

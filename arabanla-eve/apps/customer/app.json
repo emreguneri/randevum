@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Arabanla Eve Customer",
+    "slug": "arabanla-eve-customer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "entryPoint": "./src/App.tsx"
+  }
+}
+

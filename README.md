@@ -1,3 +1,18 @@
+# Arabanla Eve Monorepo (MVP scaffold)
+
+This repo will host the Istanbul-wide designated driver MVP:
+- Customer and Driver Expo apps
+- Admin Next.js panel
+- Backend API (NestJS-style)
+- Shared package for types/constants
+- Infra (Postgres + Redis via docker-compose)
+
+Getting started:
+1) `cd infra && docker-compose up -d` to start Postgres/Redis.
+2) Backend: install deps, run migrations/seeds, start API + workers.
+3) Admin and mobile apps: install deps, run dev servers (Expo/Next).
+
+Specs and endpoints: see `docs/SPEC.md` and `docs/API.md`.
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).

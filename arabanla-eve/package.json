@@ -1,0 +1,21 @@
+{
+  "name": "arabanla-eve",
+  "private": true,
+  "version": "0.0.1",
+  "packageManager": "npm@10",
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run typecheck --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "lint": "npm run lint --workspaces",
+    "dev": "npm run dev --workspace services/api"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
+

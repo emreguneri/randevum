@@ -37,12 +37,12 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showExtendModal, setShowExtendModal] = useState(false);
 
-  // Abonelik süre seçenekleri
+  // Abonelik süre seçenekleri (App Store fiyatları)
   const subscriptionPlans = [
-    { months: 1, label: "1 Ay", price: 800 },
-    { months: 3, label: "3 Ay", price: 2160, discount: "10% İndirim", originalPrice: 2400 },
-    { months: 6, label: "6 Ay", price: 4080, discount: "15% İndirim", originalPrice: 4800 },
-    { months: 12, label: "1 Yıl", price: 7680, discount: "20% İndirim", originalPrice: 9600 },
+    { months: 1, label: "1 Ay", price: 799.99 },
+    { months: 3, label: "3 Ay", price: 2499.99 },
+    { months: 6, label: "6 Ay", price: 4999.99 },
+    { months: 12, label: "1 Yıl", price: 9999.99 },
   ];
 
   // Yönlendirme kontrolü
@@ -598,18 +598,8 @@ export default function ProfilePage() {
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-lg font-semibold text-white">{plan.label}</span>
-                    {plan.discount && (
-                      <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-300">
-                        {plan.discount}
-                      </span>
-                    )}
                   </div>
                   <div className="mb-2 flex items-baseline gap-2">
-                    {plan.originalPrice && (
-                      <span className="text-sm text-slate-400 line-through">
-                        {plan.originalPrice.toFixed(2)} ₺
-                      </span>
-                    )}
                     <span className="text-2xl font-bold text-white">{plan.price.toFixed(2)} ₺</span>
                   </div>
                   {plan.months > 1 && (

@@ -16,12 +16,12 @@ export default function SubscriptionSettings() {
   const [loading, setLoading] = useState(true);
   const [showExtendModal, setShowExtendModal] = useState(false);
 
-  // Abonelik süre seçenekleri
+  // Abonelik süre seçenekleri (App Store fiyatları)
   const subscriptionPlans = [
-    { months: 1, label: '1 Ay', price: 800 },
-    { months: 3, label: '3 Ay', price: 2160, discount: '10% İndirim', originalPrice: 2400 },
-    { months: 6, label: '6 Ay', price: 4080, discount: '15% İndirim', originalPrice: 4800 },
-    { months: 12, label: '1 Yıl', price: 7680, discount: '20% İndirim', originalPrice: 9600 },
+    { months: 1, label: '1 Ay', price: 799.99 },
+    { months: 3, label: '3 Ay', price: 2499.99 },
+    { months: 6, label: '6 Ay', price: 4999.99 },
+    { months: 12, label: '1 Yıl', price: 9999.99 },
   ];
 
   const loadSubscriptionInfo = useCallback(async () => {
@@ -292,18 +292,8 @@ export default function SubscriptionSettings() {
                 >
                   <View style={styles.planHeader}>
                     <Text style={styles.planLabel}>{plan.label}</Text>
-                    {plan.discount && (
-                      <View style={styles.discountBadge}>
-                        <Text style={styles.discountText}>{plan.discount}</Text>
-                      </View>
-                    )}
                   </View>
                   <View style={styles.planPriceContainer}>
-                    {plan.originalPrice && (
-                      <Text style={styles.planOriginalPrice}>
-                        {plan.originalPrice.toFixed(2)} ₺
-                      </Text>
-                    )}
                     <Text style={styles.planPrice}>{plan.price.toFixed(2)} ₺</Text>
                   </View>
                   {plan.months > 1 && (

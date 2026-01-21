@@ -7,15 +7,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
-const MONTHLY_FEE = 800;
-
-// Süre bazlı fiyatlandırma (indirimli)
+// Süre bazlı fiyatlandırma (App Store fiyatları)
 const getPriceForDuration = (months: number): number => {
-  const basePrice = MONTHLY_FEE * months;
-  if (months >= 12) return basePrice * 0.8; // 20% indirim
-  if (months >= 6) return basePrice * 0.85; // 15% indirim
-  if (months >= 3) return basePrice * 0.9; // 10% indirim
-  return basePrice;
+  switch (months) {
+    case 1:
+      return 799.99;
+    case 3:
+      return 2499.99;
+    case 6:
+      return 4999.99;
+    case 12:
+      return 9999.99;
+    default:
+      return 799.99;
+  }
 };
 
 function PaymentPageContent() {
@@ -36,7 +41,7 @@ function PaymentPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [currentSubscriptionEnd, setCurrentSubscriptionEnd] = useState<Date | null>(null);
   
-  const selectedPrice = (isExtend || isUpgrade) ? getPriceForDuration(durationMonths) : MONTHLY_FEE;
+  const selectedPrice = (isExtend || isUpgrade) ? getPriceForDuration(durationMonths) : getPriceForDuration(1);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -244,15 +249,10 @@ function PaymentPageContent() {
                 <>
                   {durationMonths} {durationMonths === 1 ? "Ay" : "Ay"} abonelik ücreti:{" "}
                   <span className="font-semibold text-white">{selectedPrice.toFixed(2)} ₺</span>
-                  {durationMonths > 1 && (
-                    <span className="ml-2 text-emerald-400">
-                      ({durationMonths >= 12 ? "20%" : durationMonths >= 6 ? "15%" : "10%"} İndirim)
-                    </span>
-                  )}
                 </>
               ) : (
                 <>
-                  Aylık abonelik ücreti: <span className="font-semibold text-white">{MONTHLY_FEE} ₺</span>
+                  Aylık abonelik ücreti: <span className="font-semibold text-white">{getPriceForDuration(1).toFixed(2)} ₺</span>
                 </>
               )}
             </p>
@@ -381,7 +381,7 @@ function PaymentPageContent() {
                   ? "İşleniyor..." 
                   : (isExtend || isUpgrade) 
                     ? `${selectedPrice.toFixed(2)} ₺ Öde` 
-                    : `${MONTHLY_FEE.toFixed(2)} ₺ Öde`
+                    : `${getPriceForDuration(1).toFixed(2)} ₺ Öde`
                 }
               </button>
             </div>

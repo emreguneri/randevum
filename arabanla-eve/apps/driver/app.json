@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Arabanla Eve Driver",
+    "slug": "arabanla-eve-driver",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "entryPoint": "./src/App.tsx"
+  }
+}
+
