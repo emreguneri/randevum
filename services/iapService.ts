@@ -1,5 +1,12 @@
-import * as RNIap from 'react-native-iap';
 import { Platform, Alert } from 'react-native';
+
+// react-native-iap'ı dinamik olarak import et (Expo Go'da çalışmaz)
+let RNIap: any = null;
+try {
+  RNIap = require('react-native-iap');
+} catch (error) {
+  console.warn('[IAP] react-native-iap modülü bulunamadı. Development build gerekli.');
+}
 
 // App Store Connect'te oluşturulacak subscription ID'ler
 // Bu ID'ler App Store Connect'te tanımlanacak
@@ -40,6 +47,11 @@ class IAPService {
       return false;
     }
 
+    if (!RNIap) {
+      console.warn('[IAP] react-native-iap modülü yüklü değil. Development build gerekli.');
+      return false;
+    }
+
     if (this.isInitialized) {
       return true;
     }
@@ -58,8 +70,8 @@ class IAPService {
   /**
    * Mevcut abonelikleri kontrol et
    */
-  async getAvailableSubscriptions(): Promise<RNIap.Subscription[]> {
-    if (Platform.OS !== 'ios' || !this.isInitialized) {
+  async getAvailableSubscriptions(): Promise<any[]> {
+    if (Platform.OS !== 'ios' || !this.isInitialized || !RNIap) {
       return [];
     }
 
@@ -77,8 +89,8 @@ class IAPService {
   /**
    * Kullanıcının aktif aboneliklerini kontrol et
    */
-  async getActiveSubscriptions(): Promise<RNIap.Purchase[]> {
-    if (Platform.OS !== 'ios' || !this.isInitialized) {
+  async getActiveSubscriptions(): Promise<any[]> {
+    if (Platform.OS !== 'ios' || !this.isInitialized || !RNIap) {
       return [];
     }
 
@@ -97,11 +109,11 @@ class IAPService {
    */
   async purchaseSubscription(
     subscriptionId: string,
-    onSuccess: (purchase: RNIap.Purchase) => Promise<void>,
+    onSuccess: (purchase: any) => Promise<void>,
     onError: (error: any) => void
   ): Promise<void> {
-    if (Platform.OS !== 'ios' || !this.isInitialized) {
-      onError(new Error('IAP sadece iOS\'ta kullanılabilir'));
+    if (Platform.OS !== 'ios' || !this.isInitialized || !RNIap) {
+      onError(new Error('IAP sadece iOS\'ta ve development build ile kullanılabilir'));
       return;
     }
 
@@ -130,12 +142,17 @@ class IAPService {
    * Purchase listener'ları ayarla
    */
   private setupPurchaseListeners(
-    onSuccess: (purchase: RNIap.Purchase) => Promise<void>,
+    onSuccess: (purchase: any) => Promise<void>,
     onError: (error: any) => void
   ) {
+    if (!RNIap) {
+      onError(new Error('IAP modülü yüklü değil'));
+      return;
+    }
+
     // Purchase güncellemelerini dinle
     this.purchaseUpdateSubscription = RNIap.purchaseUpdatedListener(
-      async (purchase: RNIap.Purchase) => {
+      async (purchase: any) => {
         try {
           console.log('[IAP] Satın alma başarılı:', purchase);
           
@@ -155,7 +172,7 @@ class IAPService {
 
     // Purchase hatalarını dinle
     this.purchaseErrorSubscription = RNIap.purchaseErrorListener(
-      (error: RNIap.PurchaseError) => {
+      (error: any) => {
         console.error('[IAP] Satın alma hatası:', error);
         this.cleanupPurchaseListeners();
         
@@ -185,8 +202,8 @@ class IAPService {
   /**
    * Transaction'ı tamamla (backend doğrulamasından sonra)
    */
-  async finishTransaction(purchase: RNIap.Purchase): Promise<void> {
-    if (Platform.OS !== 'ios' || !this.isInitialized) {
+  async finishTransaction(purchase: any): Promise<void> {
+    if (Platform.OS !== 'ios' || !this.isInitialized || !RNIap) {
       return;
     }
 
@@ -202,7 +219,7 @@ class IAPService {
    * Bekleyen transaction'ları kontrol et ve tamamla
    */
   async checkPendingTransactions(): Promise<void> {
-    if (Platform.OS !== 'ios' || !this.isInitialized) {
+    if (Platform.OS !== 'ios' || !this.isInitialized || !RNIap) {
       return;
     }
 
@@ -219,7 +236,7 @@ class IAPService {
    * Bağlantıyı kapat
    */
   async disconnect(): Promise<void> {
-    if (Platform.OS !== 'ios' || !this.isInitialized) {
+    if (Platform.OS !== 'ios' || !this.isInitialized || !RNIap) {
       return;
     }
 
